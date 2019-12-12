@@ -19,7 +19,7 @@ class BaselineTopo(Topo):
     "Single host connected to 2 clients via 1 switch each."
     def build(self):
         switch1 = self.addSwitch('s1')
-        switch2 = self.addSwitch('s2')
+        # switch2 = self.addSwitch('s2')
 
         server = self.addHost('server')
         self.addLink(server, switch1)
