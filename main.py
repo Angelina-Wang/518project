@@ -70,8 +70,9 @@ def simpleTest():
     client1, client2, server = net.get('client1', 'client2', 'server')
     print server.IP()
     client1.connectServer(server.IP())
-    client1.sendToServer('hello')
     pdb.set_trace()
+    client1.sendToServer('hello')
+    #pdb.set_trace()
     # server.restart(100)
     # print 'here is the time now'
     # print server.getTime()

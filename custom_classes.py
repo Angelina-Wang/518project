@@ -8,6 +8,7 @@ import pdb
 class EchoHandlerServer(asyncore.dispatcher_with_send):
 	def handle_read(self):
 		data = self.recv(8192)
+                pdb.set_trace()
 		if data:
 			print("I am a server")
 			self.send('I am a server')
@@ -29,10 +30,18 @@ class EchoServer(asyncore.dispatcher):
 
 	def handleAccept(self):
 		pair = self.accept()
+                pdb.set_trace()
 		if pair is not None:
 			c, addr = pair
 			print 'Incoming connection from %s' % repr(addr)
-			handler = EchoHandlerClient(c)
+			handler = EchoHandlerServer(c)
+
+class EchoClient(asyncore.dispatcher):
+	def __init__(self, host, port=12345):
+		asyncore.dispatcher.__init__(self)
+		self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
+		self.connect((host, port))
+		handler = EchoHandlerClient(self)
 
 class HostServer(Host):
 	def __init__(self, name, inNamespace=True, **params):
@@ -56,18 +65,19 @@ class HostClient(Host):
 		super(HostClient, self).__init__(name, inNamespace, **params)
 		self.start = 0
 		self.start_from_epoch = time.time()
-		self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		# self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 	def connectServer(self, addr, port=12345):
-                pdb.set_trace()
-		self.sock.connect((addr, port))
-		handler = EchoHandlerClient(self.sock)
-		#asyncore.loop()
                 #self.thread = threading.Thread(target=asyncore.loop, kwargs={'timeout':1})
                 #self.thread.start()
+		self.client = EchoClient(addr, port)
+		# self.sock.connect((addr, port))
+		# handler = EchoHandlerClient(self.sock)
+		# asyncore.loop()
 
 	def sendToServer(self, msg):
-		self.sock.send(msg)
+                self.client.send(msg)
+		#self.sock.send(msg)
 
 	def restart(self, start):
 		self.start = start
