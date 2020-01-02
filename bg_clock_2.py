@@ -6,9 +6,9 @@ from scapy.all import *
 s = socket.socket()
 port = 12345
 #s.connect(('127.0.0.1', port))
-s.connect(('10.0.0.1', port))
-print(s.recv(1024))
+s.connect(('10.0.0.3', port))
 s.send("yes I am")
+print(s.recv(1024))
 s.close()
 
 start = time.time()

@@ -65,13 +65,13 @@ def simpleTest():
     net = Mininet(topo, link=TCLink)
     net.start()
     #asyncore.loop()
-    loop_thread = threading.Thread(target=asyncore.loop)
-    loop_thread.start()
     client1, client2, server = net.get('client1', 'client2', 'server')
     print server.IP()
-    client1.connectServer(server.IP())
-    pdb.set_trace()
-    client1.sendToServer('hello')
+    print client1.IP()
+    #client1.connectServer(server.IP())
+    #client1.connectServer('10.0.0.3')
+    #client1.sendToServer('hello')
+    #asyncore.loop()
     #pdb.set_trace()
     # server.restart(100)
     # print 'here is the time now'
@@ -79,8 +79,20 @@ def simpleTest():
     # print "Dumping host connections"
     # dumpNodeConnections(net.hosts)
     # print "Testing network connectivity"
-    # net.pingAll()
+    net.pingAll()
     # print "Testing bandiwdth"
+    output1 = server.cmd('python startServer.py &')
+    print(output1)
+    output = client1.cmd('python startClient.py')
+    print("here!")
+    print(output)
+    #loop_thread = threading.Thread(target=asyncore.loop)
+    #loop_thread.start()
+    #client1.connectServer(server.IP())
+    #client1.connectServer('10.0.0.18')
+    #client1.sendToServer('hello')
+    #output = client1.cmd('python bg_clock_2.py')
+    #print(output)
 
     # print 'here is the time at the end'
     # print server.getTime()
