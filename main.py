@@ -7,6 +7,11 @@ from mininet.log import setLogLevel
 from mininet.link import TCLink
 from custom_classes import *
 import ipdb
+from custom_classes import HostWithTime
+from scapy.layers.l2 import Ether
+from scapy.layers.inet import IP
+from scapy.sendrecv import send
+from scapy.all import *
 
 class SingleSwitchTopo(Topo):
     "Single switch connected to n hosts."
@@ -35,6 +40,24 @@ class BaselineTopo(Topo):
         self.addLink(client1, switch1, bw=10, delay='5ms')
         self.addLink(client2, switch1, bw=20, delay='10ms')
 
+class BaselineTopoSysTime(Topo):
+    "Single host connected to 2 clients via 1 switch each."
+    def build(self):
+        switch1 = self.addSwitch('s1')
+        # switch2 = self.addSwitch('s2')
+
+        #server = self.addHost('server', cls=HostWithTime)
+        server = self.addHost('server')
+        self.addLink(server, switch1)
+        #self.addLink(server, switch2)
+
+        #client1 = self.addHost('client1', cls=HostWithTime)
+        #client2 = self.addHost('client2', cls=HostWithTime)
+        client1 = self.addHost('client1')
+        client2 = self.addHost('client2')
+        self.addLink(client1, switch1, bw=10, delay='5ms')
+        self.addLink(client2, switch1, bw=20, delay='10ms')
+
 def simpleTest():
     "Create and test a simple network"
     topo = BaselineTopo()
@@ -60,7 +83,40 @@ def simpleTest():
     #net.iperf( (client2, server) )
     net.stop()
 
+def rec_func(pkt):
+    if hasattr(pkt[IP], 'msg'):
+        print('########### RECEIVED ############')
+        print(pkt.show())
+        print(pkt[IP].msg)
+        print('###########')
+    print(pkt.show())
+
+def testClock():
+    topo = BaselineTopoSysTime()
+    net = Mininet(topo, link=TCLink)
+    net.start()
+    client1, client2, server = net.get('client1', 'client2', 'server')
+
+    client1.cmd('python bg_clock.py &')
+
+    client2.cmd('python bg_clock.py &')
+    server.cmd('python bg_clock.py &')
+
+    pkt = IP(dst=client1.IP())/ TCP()
+    pkt[IP].msg = 'here'
+
+    sniff(prn=rec_func,filter='ip host %s' % client1.IP(),  store=1) # filter='ip host %s' % client1.IP(), 
+
+    print('########### SENT ###########')
+    print(pkt.show())
+    print('#############')
+
+    #net.iperf( (client1, server) )
+    #net.iperf( (client2, server) )
+    net.stop()
+
 if __name__ == '__main__':
     # Tell mininet to print useful information
     setLogLevel('info')
     simpleTest()
+    # testClock()

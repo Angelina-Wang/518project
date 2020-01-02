@@ -1,0 +1,10 @@
+import time
+
+t = 0
+
+def reset():
+    t = 0
+
+def get_time():
+    t = time.time()
+    return time.time() + t
