@@ -2,6 +2,8 @@ from mininet.node import Host
 import time
 import socket
 import asyncore
+import threading
+import pdb
 
 class EchoHandlerServer(asyncore.dispatcher_with_send):
 	def handle_read(self):
@@ -38,7 +40,9 @@ class HostServer(Host):
 		self.start = 0
 		self.start_from_epoch = time.time()
 		self.server = EchoServer()
-		asyncore.loop()
+                #self.thread = threading.Thread(target=asyncore.loop, kwargs={'timeout':1})
+                #self.thread.start()
+		#asyncore.loop()
 
 	def restart(self, start):
 		self.start = start
@@ -55,9 +59,12 @@ class HostClient(Host):
 		self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 	def connectServer(self, addr, port=12345):
+                pdb.set_trace()
 		self.sock.connect((addr, port))
 		handler = EchoHandlerClient(self.sock)
-		asyncore.loop()
+		#asyncore.loop()
+                #self.thread = threading.Thread(target=asyncore.loop, kwargs={'timeout':1})
+                #self.thread.start()
 
 	def sendToServer(self, msg):
 		self.sock.send(msg)

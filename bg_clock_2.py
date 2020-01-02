@@ -6,7 +6,7 @@ from scapy.all import *
 s = socket.socket()
 port = 12345
 #s.connect(('127.0.0.1', port))
-s.connect(('10.0.2.15', port))
+s.connect(('10.0.0.1', port))
 print(s.recv(1024))
 s.send("yes I am")
 s.close()

@@ -6,12 +6,13 @@ from mininet.util import dumpNodeConnections
 from mininet.log import setLogLevel
 from mininet.link import TCLink
 from custom_classes import *
-import ipdb
-from custom_classes import HostWithTime
+import pdb
 from scapy.layers.l2 import Ether
 from scapy.layers.inet import IP
 from scapy.sendrecv import send
 from scapy.all import *
+import asyncore
+import threading
 
 class SingleSwitchTopo(Topo):
     "Single switch connected to n hosts."
@@ -63,10 +64,14 @@ def simpleTest():
     topo = BaselineTopo()
     net = Mininet(topo, link=TCLink)
     net.start()
+    #asyncore.loop()
+    loop_thread = threading.Thread(target=asyncore.loop)
+    loop_thread.start()
     client1, client2, server = net.get('client1', 'client2', 'server')
+    print server.IP()
     client1.connectServer(server.IP())
     client1.sendToServer('hello')
-    ipdb.set_trace()
+    pdb.set_trace()
     # server.restart(100)
     # print 'here is the time now'
     # print server.getTime()

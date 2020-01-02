@@ -3,13 +3,19 @@ from scapy.sendrecv import sniff
 import socket
 from scapy.all import *
 
-s = socket.socket()
+sock1 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 port = 12345
-#s.connect(('127.0.0.1', port))
-s.connect(('10.0.2.15', port))
-print(s.recv(1024))
-s.send("yes I am")
-s.close()
+#sock1.bind(('', port))
+sock1.bind(('0.0.0.0', port))
+sock1.listen(1)
+print 'socket is listening'
+
+c, addr = sock1.accept()
+print 'got connection from', addr
+c.send("Hello are you there")
+response = c.recv(4096)
+print(response)
+c.close()
 
 start = time.time()
 
