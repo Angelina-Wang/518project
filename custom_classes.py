@@ -100,6 +100,34 @@ class HostClient(Host):
 	def getTime(self):
 		return time.time() - self.start_from_epoch + self.start
 
+class CommandServer():
+	def __init__(self):
+		self.start = 0
+		self.start_from_epoch = time.time()
+		self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                self.sock.bind(('0.0.0.0', 12345))
+                self.sock.listen(1)
+                self.startAccepting()
+
+        def startAccepting(self):
+                while True:
+                    c, addr = self.sock.accept()
+                    if c is not None:
+                        while True:
+                            msg = c.recv(4096)
+                            if 'askTime' in msg:
+                                c.send("time")
+                            elif 'hello' in msg:
+                                c.send('heyo there')
+                            else:
+                                c.send("gimme a better message")
+
+	def restart(self, start):
+		self.start = start
+		self.start_from_epoch = time.time()
+
+	def getTime(self):
+		return time.time() - self.start_from_epoch + self.start
 class AServer():
 	def __init__(self):
 		self.start = 0
@@ -133,6 +161,25 @@ class AClient():
 		self.start = 0
 		self.start_from_epoch = time.time()
 		self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        
+        def startListener(self):
+                self.commandSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                self.commandSock.bind(('0.0.0.0', 12345))
+                self.commandSock.listen(1)
+                self.startAccepting()
+
+        def startAccepting(self):
+                while True:
+                    c, addr = self.commandSock.accept()
+                    if c is not None:
+                        while True:
+                            msg = c.recv(4096)
+                            if 'time' in msg:
+                                c.send(self.sendToServer('time'))
+                            elif 'hello' in msg:
+                                c.send(self.sendToServer('hello'))
+                            else:
+                                c.send('back at ya')
 
 	def connectServer(self, addr, port=12345):
                 #self.thread = threading.Thread(target=asyncore.loop, kwargs={'timeout':1})
