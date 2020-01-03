@@ -175,7 +175,13 @@ class AClient():
                     if c is not None:
                         msg = c.recv(4096)
                         if 'startNTP' in msg:
-                            c.send(self.sendToServer('startNTP'))
+                            t_0 = self.getTime()
+                            response = self.sendToServer('startNTP').split('|')
+                            t_3 = self.getTime()
+                            t_1, t_2 = float(response[0]), float(response[1])
+                            offset = ((t_1 - t_0) + (t_2-t_3)) / 2.
+                            self.restart(self.start+offset)
+                            c.send(str(offset))
                         elif 'getTime' in msg:
                             c.send(str(self.getTime()))
                         else:
