@@ -72,7 +72,7 @@ class AClient():
                     t_3 = self.getTime()
                     t_1, t_2 = float(response[0]), float(response[1])
                     offset = ((t_1 - t_0) + (t_2-t_3)) / 2.
-                    self.restart(self.start+offset)
+                    self.restart(self.getTime()+offset)
                     c.send(str(offset))
                 elif 'getTime' in msg:
                     c.send(str(self.getTime()))
