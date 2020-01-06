@@ -85,7 +85,7 @@ def simpleTest():
     # print "Testing bandiwdth"
     output1 = server.cmd('python startServer.py &')
     print(output1)
-    output = client1.cmd('python startClient.py {0} {1} &'.format(server.IP(), 0))
+    output = client1.cmd('python startClient.py {0} {1} &'.format(server.IP(), 97))
     print(output)
     output = client2.cmd('python startClient.py {0} {1} &'.format(server.IP(), 0))
     print(output)
@@ -123,8 +123,6 @@ def simpleTest():
     output2 = command.cmd('python startCommander2.py {}'.format(client1.IP()))
     print("starting ntp 1")
     print(output2)
-    output = command.cmd('cat debug.txt')
-    print(output)
 
     output2 = command.cmd('python startCommander2.py {}'.format(client2.IP()))
     print("starting ntp 2")
