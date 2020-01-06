@@ -38,8 +38,8 @@ class BaselineTopo(Topo):
 
         #client1 = self.addHost('client1', cls=HostWithTime)
         #client2 = self.addHost('client2', cls=HostWithTime)
-        client1 = self.addHost('client1', cls=HostClient)
-        client2 = self.addHost('client2', cls=HostClient)
+        client1 = self.addHost('client1')
+        client2 = self.addHost('client2')
         self.addLink(client1, switch1, bw=10, delay='5ms')
         self.addLink(client2, switch1, bw=20, delay='10ms')
 
@@ -91,100 +91,31 @@ def simpleTest():
     print(output)
     time.sleep(2)
     
-    output2 = command.cmd('python startCommander1.py {}'.format(client1.IP()))
+    output2 = command.cmd('python startCommander.py {0} {1}'.format(client1.IP(), 'getTime'))
     print("get time client 1")
     print(output2)
     
-    output2 = command.cmd('python startCommander1.py {}'.format(client2.IP()))
+    output2 = command.cmd('python startCommander.py {0} {1}'.format(client2.IP(), 'getTime'))
     print("get time client 2")
     print(output2)
 
-    
-    output2 = command.cmd('python startCommander1.py {}'.format(client1.IP()))
-    print("get time client 1")
-    print(output2)
-    
-    output2 = command.cmd('python startCommander1.py {}'.format(client2.IP()))
-    print("get time client 2")
-    print(output2)
-
-    
-    output2 = command.cmd('python startCommander1.py {}'.format(client1.IP()))
-    print("get time client 1")
-    print(output2)
-    
-    output2 = command.cmd('python startCommander1.py {}'.format(client2.IP()))
-    print("get time client 2")
-    print(output2)
-    
-
-    
-
-    output2 = command.cmd('python startCommander2.py {}'.format(client1.IP()))
+    output2 = command.cmd('python startCommander.py {0} {1}'.format(client1.IP(), 'startNTP'))
     print("starting ntp 1")
     print(output2)
 
-    output2 = command.cmd('python startCommander2.py {}'.format(client2.IP()))
+    output2 = command.cmd('python startCommander.py {0} {1}'.format(client2.IP(), 'startNTP'))
     print("starting ntp 2")
     print(output2)
 
-    output2 = command.cmd('python startCommander1.py {}'.format(client1.IP()))
+    output2 = command.cmd('python startCommander.py {0} {1}'.format(client1.IP(), 'getTime'))
     print("get time client 1")
     print(output2)
     
-    output2 = command.cmd('python startCommander1.py {}'.format(client2.IP()))
+    output2 = command.cmd('python startCommander.py {0} {1}'.format(client2.IP(), 'getTime'))
     print("get time client 2")
     print(output2)
-    
-    
-
-    
-    #loop_thread = threading.Thread(target=asyncore.loop)
-    #loop_thread.start()
-    #client1.connectServer(server.IP())
-    #client1.connectServer('10.0.0.18')
-    #client1.sendToServer('hello')
-    #output = client1.cmd('python bg_clock_2.py')
-    #print(output)
-
-    # print 'here is the time at the end'
-    # print server.getTime()
-
-    #net.iperf( (client1, server) )
-    #net.iperf( (client2, server) )
     net.stop()
 
-def rec_func(pkt):
-    if hasattr(pkt[IP], 'msg'):
-        print('########### RECEIVED ############')
-        print(pkt.show())
-        print(pkt[IP].msg)
-        print('###########')
-    print(pkt.show())
-
-def testClock():
-    topo = BaselineTopoSysTime()
-    net = Mininet(topo, link=TCLink)
-    net.start()
-    client1, client2, server = net.get('client1', 'client2', 'server')
-
-    client1.cmd('python bg_clock.py &')
-
-    client2.cmd('python bg_clock.py &')
-    server.cmd('python bg_clock.py &')
-
-    pkt = IP(dst=client1.IP())/ TCP()
-    pkt[IP].msg = 'here'
-
-    sniff(prn=rec_func,filter='ip host %s' % client1.IP(),  store=1) # filter='ip host %s' % client1.IP(), 
-
-    print('########### SENT ###########')
-    print(pkt.show())
-    print('#############')
-
-    #net.iperf( (client1, server) )
-    #net.iperf( (client2, server) )
-    net.stop()
 
 if __name__ == '__main__':
     # Tell mininet to print useful information
