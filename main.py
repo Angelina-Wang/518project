@@ -83,11 +83,11 @@ def simpleTest():
     # print "Testing network connectivity"
     net.pingAll()
     # print "Testing bandiwdth"
-    output1 = server.cmd('python startServer.py &')
+    output1 = server.cmd('nohup python -u startServer.py > server_log.txt &')
     print(output1)
-    output = client1.cmd('python startClient.py {0} {1} &'.format(server.IP(), 97))
+    output = client1.cmd('nohup python -u startClient.py {0} {1} > client1_log.txt  &'.format(server.IP(), 97))
     print(output)
-    output = client2.cmd('python startClient.py {0} {1} &'.format(server.IP(), 0))
+    output = client2.cmd('nohup python -u startClient.py {0} {1} > client2_log.txt &'.format(server.IP(), 0))
     print(output)
     time.sleep(2)
     
