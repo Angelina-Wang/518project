@@ -1,7 +1,8 @@
 from custom_classes import *
+import sys
 
 client = AClient()
-client.connectServer('10.0.0.1')
+client.connectServer(sys.argv[1])
 msg1 = client.sendToServer('startNTP')
 print(msg1)
 client.close()

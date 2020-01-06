@@ -4,11 +4,13 @@ import socket
 import asyncore
 import threading
 import pdb
+import thread
+from threading import Thread
 
 class EchoHandlerServer(asyncore.dispatcher_with_send):
     def handle_read(self):
         data = self.recv(8192)
-                pdb.set_trace()
+        pdb.set_trace()
         if data:
             print("I am a server")
             self.send('I am a server')
@@ -129,27 +131,44 @@ class HostClient(Host):
 #   def getTime(self):
 #       return time.time() - self.start_from_epoch + self.start
 class AServer():
-    def __init__(self):
+    def __init__(self, n=2):
         self.start = 0
         self.start_from_epoch = time.time()
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                self.sock.bind(('0.0.0.0', 12345))
-                self.sock.listen(1)
-                self.startAccepting()
+        self.sock.bind(('0.0.0.0', 12345))
+        self.sock.listen(n)
+        self.n = n
+        self.startAccepting()
+
+    def connectNew(self, client, addr):
+        print('connecting ', addr)
+        while True:
+            msg = client.recv(4096)
+            client.send('connected')
+            part1 = self.getTime()
+            if 'startNTP' in msg:
+                client.send(str(part1) + '|' + str(self.getTime()))
+
+            elif 'close' in msg:
+                clients.remove(client)
+                addrs.remove(addr)
+                client.close()
+                break 
+           
+        return
 
     def startAccepting(self):
-            while True:
-                c, addr = self.sock.accept()
-                if c is not None:
-                    while True:
-                        msg = c.recv(4096)
-                        part1 = self.getTime()
-                        if 'startNTP' in msg:
-                            c.send(str(part1) + '|' + str(self.getTime()))
-                        elif 'hello' in msg:
-                            c.send('heyo there')
-                        else:
-                            c.send("gimme a better message")
+        clients = []
+        addrs = []
+        
+        while True:
+            c, addr = self.sock.accept()
+            if c is not None:
+                clients.append(c)
+                addrs.append(addr)
+                #thread.start_new_thread(connectNew, (c, addr))
+                Thread(target=self.connectNew, args=(c, addr)).start()
+                
 
     def restart(self, start):
         self.start = start
@@ -166,7 +185,7 @@ class AClient():
     def startListener(self):
         self.commandSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.commandSock.bind(('0.0.0.0', 12345))
-        self.commandSock.listen(10)
+        self.commandSock.listen(100)
         self.startAccepting()
 
     def startAccepting(self):
@@ -175,13 +194,21 @@ class AClient():
             if c is not None:
                 msg = c.recv(4096)
                 if 'startNTP' in msg:
+
                     t_0 = self.getTime()
                     response = self.sendToServer('startNTP').split('|')
+                    c.send(response)
+                    """
+
                     t_3 = self.getTime()
                     t_1, t_2 = float(response[0]), float(response[1])
                     offset = ((t_1 - t_0) + (t_2-t_3)) / 2.
+
+
+                    offset = 5
                     self.restart(self.start+offset)
                     c.send(str(offset))
+                    """
                 elif 'getTime' in msg:
                     c.send(str(self.getTime()))
                 else:
@@ -207,5 +234,5 @@ class AClient():
     def getTime(self):
         return time.time() - self.start_from_epoch + self.start
     
-        def close(self):
+    def close(self):
         self.sock.close()
