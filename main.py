@@ -168,6 +168,41 @@ def variableDelayBW(hps):
    
     net.stop()
 
+def busyClient():
+    topo = DelayBWTopo(hps)
+    
+    net = Mininet(topo, link=TCLink)
+    net.start()
+
+    client1, client2, server, command = net.get('client1', 'client2', 'server', 'command')
+    print server.IP()
+    print client1.IP()
+    net.pingAll()
+
+    print('initializing server and clients')
+    output1 = server.cmd('nohup python -u startServer.py > server_log.txt &')
+    output = client1.cmd('nohup python -u startClient.py {0} {1} > client1_log.txt  &'.format(server.IP(), 97))
+    output = client2.cmd('nohup python -u startClient.py {0} {1} > client2_log.txt &'.format(server.IP(), 0))
+    output = client2.cmd('nohup python -u simulateLoad.py {0} {1} > client2sim_log.txt &'.format(server.IP(), 0))
+
+    time.sleep(3)
+
+    print('run NTP on client 1')
+    output2 = command.cmd('python startCommander.py {0} {1}'.format(client1.IP(), 'startNTP'))
+    print(output2)
+
+    print('run NTP on client 2')
+    output2 = command.cmd('python startCommander.py {0} {1}'.format(client2.IP(), 'startNTP'))
+    print(output2)
+
+    a, b = getTimes(command, client1, client2, server)
+    print('client1 diff')
+    print(a)
+    print('client2 diff')
+    print(b)
+   
+    net.stop()
+
 
 def multiClientTest():
     "Create and test a simple network"
@@ -264,8 +299,5 @@ if __name__ == '__main__':
     setLogLevel('info')
 
     hps = parse_args()
-    #simpleTest()
-    variableDelayBW(hps)
-    #multiClientTest()
-    #simpleTest()
-    # testClock()
+
+    busyClient()
