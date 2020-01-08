@@ -14,6 +14,19 @@ from scapy.all import *
 import asyncore
 import threading
 
+from argparse import ArgumentParser
+import numpy as np
+
+def parse_args():
+    parser = ArgumentParser()
+
+    parser.add_argument('--delay', default=5, type=int,
+                        help='changes the delay to client 2')
+    parser.add_argument('--bw', default=10, type=int,
+                        help='changes bandwidth of link to client 2')
+
+    return parser.parse_args()
+
 class SingleSwitchTopo(Topo):
     "Single switch connected to n hosts."
     def build(self, n=2):
@@ -61,6 +74,31 @@ class BigTopo(Topo):
         for client in clients:
             self.addLink(client, switch1, bw=10, delay='5ms')
 
+class DelayBWTopo(Topo):
+    "Single host connected to 2 clients via 1 switch each."
+    def __init__(self, hps):
+        self.bw = hps.bw
+        self.delay = hps.delay
+        super(DelayBWTopo, self).__init__()
+        
+    def build(self):
+        switch1 = self.addSwitch('s1')
+        # switch2 = self.addSwitch('s2')
+
+        #server = self.addHost('server', cls=HostWithTime)
+        server = self.addHost('server')
+        self.addLink(server, switch1)
+        #self.addLink(server, switch2)
+        command = self.addHost('command')
+        self.addLink(command, switch1)
+
+        #client1 = self.addHost('client1', cls=HostWithTime)
+        #client2 = self.addHost('client2', cls=HostWithTime)
+        client1 = self.addHost('client1')
+        client2 = self.addHost('client2')
+        self.addLink(client1, switch1, bw=10, delay='5ms')
+        self.addLink(client2, switch1, bw=10, delay='5ms')
+
 def getTimes(command, client1, client2, server):
     client1Time = float(command.cmd('python startCommander.py {0} {1}'.format(client1.IP(), 'getTime')))
     serverTime = float(command.cmd('python startCommander.py {0} {1}'.format(server.IP(), 'getTime')))
@@ -70,7 +108,45 @@ def getTimes(command, client1, client2, server):
     serverTime_ = float(command.cmd('python startCommander.py {0} {1}'.format(server.IP(), 'getTime')))
     client1Time_ = float(command.cmd('python startCommander.py {0} {1}'.format(client1.IP(), 'getTime')))
 
-    return (client1Time+client1Time_)/2., (client2Time+client2Time_)/2., (serverTime+serverTime_)/2.
+    client1_diff = (np.abs(client1Time - serverTime) + np.abs(client1Time_ - serverTime_))/2.
+    client2_diff = (np.abs(client2Time - serverTime) + np.abs(client2Time_ - serverTime_))/2.
+
+    return client1_diff, client2_diff
+
+def variableDelayBW(hps):
+    topo = BaselineTopo()
+    
+    net = Mininet(topo, link=TCLink)
+    net.start()
+
+    client1, client2, server, command = net.get('client1', 'client2', 'server', 'command')
+    print server.IP()
+    print client1.IP()
+    net.pingAll()
+
+    print('initializing server and clients')
+    output1 = server.cmd('nohup python -u startServer.py > server_log.txt &')
+    output = client1.cmd('nohup python -u startClient.py {0} {1} > client1_log.txt  &'.format(server.IP(), 97))
+    output = client2.cmd('nohup python -u startClient.py {0} {1} > client2_log.txt &'.format(server.IP(), 0))
+
+    time.sleep(1)
+
+    print('run NTP on client 1')
+    output2 = command.cmd('python startCommander.py {0} {1}'.format(client1.IP(), 'startNTP'))
+    print(output2)
+
+    print('run NTP on client 2')
+    output2 = command.cmd('python startCommander.py {0} {1}'.format(client2.IP(), 'startNTP'))
+    print(output2)
+
+    a, b = getTimes(command, client1, client2, server)
+    print('client1 diff')
+    print(a)
+    print('client2 diff')
+    print(b)
+   
+    net.stop()
+
 
 def multiClientTest():
     "Create and test a simple network"
@@ -148,8 +224,11 @@ def simpleTest():
     print("starting ntp 2")
     print(output2)
 
-    a, b, c = getTimes(command, client1, client2, server)
-    print(a, b, c)
+    a, b = getTimes(command, client1, client2, server)
+    print('client1 diff')
+    print(a)
+    print('client2 diff')
+    print(b)
    
     # net.iperf((client1, server))
     # net.iperf((client2, server))
@@ -159,6 +238,11 @@ def simpleTest():
 if __name__ == '__main__':
     # Tell mininet to print useful information
     setLogLevel('info')
+
+    hps = parse_args()
+    simpleTest()
+    #variableDelayBW(hps)
+
     multiClientTest()
     #simpleTest()
     # testClock()
