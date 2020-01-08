@@ -19,13 +19,14 @@ from argparse import ArgumentParser
 import numpy as np
 import subprocess
 import os
+import pickle as pkl
 
 def parse_args():
     parser = ArgumentParser()
 
     parser.add_argument('--delay', default=5, type=int,
                         help='changes the delay to client 2')
-    parser.add_argument('--bw', default=10, type=int,
+    parser.add_argument('--bw', default=1.0, type=float,
                         help='changes bandwidth of link to client 2')
     parser.add_argument('--num_trials', default=1, type=int,
                         help='number of trials for variance testing')
@@ -96,7 +97,7 @@ class DelayBWTopo(Topo):
 
         client1 = self.addHost('client1')
         client2 = self.addHost('client2')
-        self.addLink(client1, switch1, bw=10, delay='5ms')
+        self.addLink(client1, switch1, bw=1, delay='5ms')
         self.addLink(client2, switch1, bw=self.bw, delay='{}ms'.format(self.delay))
 
 def getTimesMultiple(command, server, clientList):
@@ -115,7 +116,12 @@ def getTimesMultiple(command, server, clientList):
         serverTime = float(command.cmd('python startCommander.py {0} {1}'.format(server.IP(), 'getTime')))
         b = time.time()
         clientTime = float(command.cmd('python startCommander.py {0} {1}'.format(client.IP(), 'getTime')))
-        diffs.append(np.abs(clientTime - serverTime - (b - a)))
+        c = time.time()
+
+        serverAdjust = serverTime + (b-a)/2.
+        clientAdjust = clientTime - (c-b)/2.
+        
+        diffs.append(np.abs(serverAdjust-clientAdjust))
 
     return diffs
 
@@ -147,15 +153,26 @@ def variableDelayBW(hps):
     output2 = command.cmd('python startCommander.py {0} {1}'.format(client2.IP(), 'startNTP'))
     print(output2)
 
-    a, b = getTimesMultiple(command, server, [client1, client2])
-    print('client1 diff')
-    print(a)
-    print('client2 diff')
-    print(b)
+    _c1, _c2 = getTimesMultiple(command, server, [client1, client2])
+
+    print(_c1, _c2)
    
     net.stop()
 
-    return a, b
+    if os.path.isfile('c1_d{}'.format(hps.delay)):
+        c1 = pkl.load(open('c1_d{}'.format(hps.delay), 'rb'))
+        c2 = pkl.load(open('c2_d{}'.format(hps.delay), 'rb'))
+    else:
+        c1 = []
+        c2 = []
+
+    c1.append(_c1)
+    c2.append(_c2)
+
+    pkl.dump(c1, open('c1_d{}'.format(hps.delay), 'wb'))
+    pkl.dump(c2, open('c2_d{}'.format(hps.delay), 'wb'))
+
+    return _c1, _c2
 
 def busyClient():
     topo = DelayBWTopo(hps)
@@ -311,32 +328,11 @@ def simpleTest():
     # net.iperf((client2, server))
     net.stop()
 
-def multiTrialDelayBW(hps):
-    c1_diffs = []
-    c2_diffs = []
-    for i in range(hps.num_trials):
-        os.system('sudo mn -c')
-        os.system('sudo pkill -9 python')
-        _c1, _c2 = variableDelayBW(hps)
-        c1_diffs.append(_c1)
-        c2_diffs.append(_c2)
-
-        time.sleep(1)
-
-    print(np.mean(c1_diffs))
-    print(np.std(c1_diffs))
-
-    print(np.mean(c2_diffs))
-    print(np.std(c2_diffs))
-
-    return c1_diffs, c2_diffs
-
 
 if __name__ == '__main__':
     # Tell mininet to print useful information
     setLogLevel('info')
 
     hps = parse_args()
-    multiTrialDelayBW(hps)
-
+    variableDelayBW(hps)
     
