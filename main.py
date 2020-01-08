@@ -14,7 +14,7 @@ from scapy.all import *
 import asyncore
 import threading
 import itertools
-
+from threading import Thread
 from argparse import ArgumentParser
 import numpy as np
 
@@ -169,6 +169,10 @@ def sendLotsTest():
     time.sleep(2)
     
     print(getTimesMultiple(command, server, [client1, client2]))
+    #net.iperf((client1, server))
+    lst = (client1, server)
+    Thread(target=net.iperf, args=((lst,))).start()
+    #Thread(target=net.iperf, args=((client1, server))).start()
 
     output2 = command.cmd('python startCommander.py {0} {1}'.format(client1.IP(), 'startNTP'))
     print("starting ntp 1")
@@ -179,7 +183,6 @@ def sendLotsTest():
     print(output2)
 
     print(getTimesMultiple(command, server, [client1, client2]))
-    # net.iperf((client1, server))
     # net.iperf((client2, server))
     net.stop()
 
