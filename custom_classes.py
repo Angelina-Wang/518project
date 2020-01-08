@@ -22,7 +22,8 @@ class AServer():
             part1 = self.getTime()
             if 'startNTP' in msg:
                 client.send(str(part1) + '|' + str(self.getTime()))
-
+            elif 'getTime' in msg:
+                client.send(str(self.getTime()))
             elif 'close' in msg:
                 clients.remove(client)
                 addrs.remove(addr)

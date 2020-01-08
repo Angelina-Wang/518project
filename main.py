@@ -61,6 +61,17 @@ class BaselineTopoSysTime(Topo):
         self.addLink(client1, switch1, bw=10, delay='5ms')
         self.addLink(client2, switch1, bw=20, delay='10ms')
 
+def getTimes(client1, client2, server):
+    client1Time = command.cmd('python startCommander.py {0} {1}'.format(client1.IP(), 'getTime'))
+    serverTime = command.cmd('python startCommander.py {0} {1}'.format(server.IP(), 'getTime'))
+    client2Time = command.cmd('python startCommander.py {0} {1}'.format(client2.IP(), 'getTime'))
+
+    client2Time_ = command.cmd('python startCommander.py {0} {1}'.format(client2.IP(), 'getTime'))
+    serverTime_ = command.cmd('python startCommander.py {0} {1}'.format(server.IP(), 'getTime'))
+    client1Time_ = command.cmd('python startCommander.py {0} {1}'.format(client1.IP(), 'getTime'))
+
+    return (client1Time+client1Time_)/2., (client2Time+client2Time_)/2., (serverTime+serverTime_)/2.
+
 def simpleTest():
     "Create and test a simple network"
     topo = BaselineTopo()
@@ -91,6 +102,10 @@ def simpleTest():
     print(output)
     time.sleep(2)
     
+    output2 = command.cmd('python startCommander.py {0} {1}'.format(server.IP(), 'getTime'))
+    print("get time SERVER")
+    print(output2)
+    
     output2 = command.cmd('python startCommander.py {0} {1}'.format(client1.IP(), 'getTime'))
     print("get time client 1")
     print(output2)
@@ -114,6 +129,11 @@ def simpleTest():
     output2 = command.cmd('python startCommander.py {0} {1}'.format(client2.IP(), 'getTime'))
     print("get time client 2")
     print(output2)
+    
+    output2 = command.cmd('python startCommander.py {0} {1}'.format(server.IP(), 'getTime'))
+    print("get time SERVER")
+    print(output2)
+    
     net.stop()
 
 
