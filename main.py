@@ -17,6 +17,8 @@ import itertools
 from threading import Thread
 from argparse import ArgumentParser
 import numpy as np
+import subprocess
+import os
 
 def parse_args():
     parser = ArgumentParser()
@@ -25,6 +27,8 @@ def parse_args():
                         help='changes the delay to client 2')
     parser.add_argument('--bw', default=10, type=int,
                         help='changes bandwidth of link to client 2')
+    parser.add_argument('--num_trials', default=1, type=int,
+                        help='number of trials for variance testing')
 
     return parser.parse_args()
 
@@ -84,17 +88,12 @@ class DelayBWTopo(Topo):
         
     def build(self):
         switch1 = self.addSwitch('s1')
-        # switch2 = self.addSwitch('s2')
 
-        #server = self.addHost('server', cls=HostWithTime)
         server = self.addHost('server')
         self.addLink(server, switch1)
-        #self.addLink(server, switch2)
         command = self.addHost('command')
         self.addLink(command, switch1)
 
-        #client1 = self.addHost('client1', cls=HostWithTime)
-        #client2 = self.addHost('client2', cls=HostWithTime)
         client1 = self.addHost('client1')
         client2 = self.addHost('client2')
         self.addLink(client1, switch1, bw=10, delay='5ms')
@@ -116,7 +115,7 @@ def getTimesMultiple(command, server, clientList):
         serverTime = float(command.cmd('python startCommander.py {0} {1}'.format(server.IP(), 'getTime')))
         b = time.time()
         clientTime = float(command.cmd('python startCommander.py {0} {1}'.format(client.IP(), 'getTime')))
-        diffs.append(clientTime - serverTime - (b - a))
+        diffs.append(np.abs(clientTime - serverTime - (b - a)))
 
     return diffs
 
@@ -133,8 +132,10 @@ def variableDelayBW(hps):
 
     print('initializing server and clients')
     output1 = server.cmd('nohup python -u startServer.py > server_log.txt &')
-    output = client1.cmd('nohup python -u startClient.py {0} {1} > client1_log.txt  &'.format(server.IP(), 97))
-    output = client2.cmd('nohup python -u startClient.py {0} {1} > client2_log.txt &'.format(server.IP(), 0))
+    c1_off = np.random.randint(0, 50)
+    c2_off = np.random.randint(0, 50)
+    output = client1.cmd('nohup python -u startClient.py {0} {1} > client1_log.txt  &'.format(server.IP(), c1_off))
+    output = client2.cmd('nohup python -u startClient.py {0} {1} > client2_log.txt &'.format(server.IP(), c2_off))
 
     time.sleep(3)
 
@@ -153,6 +154,8 @@ def variableDelayBW(hps):
     print(b)
    
     net.stop()
+
+    return a, b
 
 def busyClient():
     topo = DelayBWTopo(hps)
@@ -181,7 +184,7 @@ def busyClient():
     output2 = command.cmd('python startCommander.py {0} {1}'.format(client2.IP(), 'startNTP'))
     print(output2)
 
-    a, b = getTimes(command, client1, client2, server)
+    a, b = getTimesMultiple(command, server, [client1, client2])
     print('client1 diff')
     print(a)
     print('client2 diff')
@@ -308,18 +311,30 @@ def simpleTest():
     # net.iperf((client2, server))
     net.stop()
 
+def multiTrialDelayBW(hps):
+    c1_diffs = []
+    c2_diffs = []
+    for i in range(hps.num_trials):
+        _c1, _c2 = variableDelayBW(hps)
+        c1_diffs.append(_c1)
+        c2_diffs.append(_c2)
+
+        time.sleep(1)
+
+    print(np.mean(c1_diffs))
+    print(np.std(c1_diffs))
+
+    print(np.mean(c2_diffs))
+    print(np.std(c2_diffs))
+
+    return c1_diffs, c2_diffs
+
 
 if __name__ == '__main__':
     # Tell mininet to print useful information
     setLogLevel('info')
 
     hps = parse_args()
+    multiTrialDelayBW(hps)
 
-    busyClient()
-
-    #simpleTest()
-    #variableDelayBW(hps)
-    #multiClientTest()
-    #simpleTest()
-    sendLotsTest()
-    # testClock()
+    
