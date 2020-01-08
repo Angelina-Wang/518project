@@ -274,7 +274,8 @@ def multiClientTest(hps):
     clients = []
     for i in range(num):
         client = net.get('client{}'.format(i+1))
-        client.cmd('nohup python -u startClient.py {0} {1} > client{2}_log.txt  &'.format(server.IP(), 97, i))
+        off = np.random.randint(0, 50)
+        client.cmd('nohup python -u startClient.py {0} {1} > client{2}_log.txt  &'.format(server.IP(), off, i))
         clients.append(client)
     server.cmd('nohup python -u startServer.py > server_log.txt &')
     time.sleep(2)
@@ -287,6 +288,7 @@ def multiClientTest(hps):
         print(output2)
 
     times_ = getTimesMultiple(command, server, clients)
+    print(times_)
 
     if os.path.isfile('multiple_{}'.format(num)):
         times = pkl.load(open('multiple{}'.format(num), 'rb'))
