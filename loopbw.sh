@@ -1,5 +1,7 @@
 #!/bin/bash
 
+rm c1_bw$1
+rm c2_bw$1
 
 for i in {10..1}
 do

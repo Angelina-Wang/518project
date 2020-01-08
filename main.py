@@ -163,18 +163,35 @@ def variableDelayBW(hps):
    
     net.stop()
 
-    if os.path.isfile('c1_d{}'.format(hps.delay)):
-        c1 = pkl.load(open('c1_d{}'.format(hps.delay), 'rb'))
-        c2 = pkl.load(open('c2_d{}'.format(hps.delay), 'rb'))
-    else:
-        c1 = []
-        c2 = []
+    # we are testing diff delay
+    if hps.delay != 5:
+        if os.path.isfile('c1_d{}'.format(hps.delay)):
+            c1 = pkl.load(open('c1_d{}'.format(hps.delay), 'rb'))
+            c2 = pkl.load(open('c2_d{}'.format(hps.delay), 'rb'))
+        else:
+            c1 = []
+            c2 = []
 
-    c1.append(_c1)
-    c2.append(_c2)
+        c1.append(_c1)
+        c2.append(_c2)
 
-    pkl.dump(c1, open('c1_d{}'.format(hps.delay), 'wb'))
-    pkl.dump(c2, open('c2_d{}'.format(hps.delay), 'wb'))
+        pkl.dump(c1, open('c1_d{}'.format(hps.delay), 'wb'))
+        pkl.dump(c2, open('c2_d{}'.format(hps.delay), 'wb'))
+
+    # we are testing diff bandwidth
+    if hps.bw != 1:
+        if os.path.isfile('c1_bw{}'.format(hps.bw)):
+            c1 = pkl.load(open('c1_bw{}'.format(hps.bw), 'rb'))
+            c2 = pkl.load(open('c2_bw{}'.format(hps.bw), 'rb'))
+        else:
+            c1 = []
+            c2 = []
+
+        c1.append(_c1)
+        c2.append(_c2)
+
+        pkl.dump(c1, open('c1_bw{}'.format(hps.bw), 'wb'))
+        pkl.dump(c2, open('c2_bw{}'.format(hps.bw), 'wb'))
 
     return _c1, _c2
 
@@ -352,5 +369,5 @@ if __name__ == '__main__':
     elif hps.version == 1:
         multiClientTest(hps)
     elif hps.version == 2:
-        simpleTest()
+        busyClient()
     
