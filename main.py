@@ -13,6 +13,7 @@ from scapy.sendrecv import send
 from scapy.all import *
 import asyncore
 import threading
+import itertools
 
 from argparse import ArgumentParser
 import numpy as np
@@ -113,6 +114,26 @@ def getTimes(command, client1, client2, server):
 
     return client1_diff, client2_diff
 
+def getTimesMultiple(command, server, clientList):
+    #perms = list(itertools.permutations(clientList))
+    #diffs = np.zeros(len(clientList))
+
+    #for perm in perms:
+    #    serverTime_ = float(command.cmd('python startCommander.py {0} {1}'.format(server.IP(), 'getTime')))
+    #    for client in perm:
+    #        clientTime = float(command.cmd('python startCommander.py {0} {1}'.format(client.IP(), 'getTime')))
+    #        diffs[int(client.name[6:])] += (clientTime - serverTime)
+   
+    diffs = []
+    for client in clientList:
+        a = time.time()
+        serverTime = float(command.cmd('python startCommander.py {0} {1}'.format(server.IP(), 'getTime')))
+        b = time.time()
+        clientTime = float(command.cmd('python startCommander.py {0} {1}'.format(client.IP(), 'getTime')))
+        diffs.append(clientTime - (b - a))
+
+    return diffs
+
 def variableDelayBW(hps):
     topo = BaselineTopo()
     
@@ -161,6 +182,7 @@ def multiClientTest():
     output = client2.cmd('nohup python -u startClient.py {0} {1} > client2_log.txt &'.format(server.IP(), 0))
     output = client3.cmd('nohup python -u startClient.py {0} {1} > client3_log.txt  &'.format(server.IP(), 34))
     output = client4.cmd('nohup python -u startClient.py {0} {1} > client4_log.txt &'.format(server.IP(), 52))
+    print(client1.name)
     time.sleep(2)
     
     output2 = command.cmd('python startCommander.py {0} {1}'.format(client1.IP(), 'startNTP'))
@@ -171,8 +193,10 @@ def multiClientTest():
     print("starting ntp 2")
     print(output2)
 
-    a, b, c = getTimes(command, client1, client2, server)
-    print(a, b, c)
+    print(getTimesMultiple(command, server, [client1, client2, client3, client4]))
+
+    #a, b, c = getTimes(command, client1, client2, server)
+    #print(a, b, c)
    
     # net.iperf((client1, server))
     # net.iperf((client2, server))
@@ -240,7 +264,7 @@ if __name__ == '__main__':
     setLogLevel('info')
 
     hps = parse_args()
-    simpleTest()
+    #simpleTest()
     #variableDelayBW(hps)
 
     multiClientTest()
