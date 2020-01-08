@@ -30,6 +30,8 @@ def parse_args():
                         help='changes bandwidth of link to client 2')
     parser.add_argument('--version', default=0, type=int,
                         help='which version of test to run')
+    parser.add_argument('--num_clients', default=2, type=int,
+                        help='number of clients')
     parser.add_argument('--num_trials', default=1, type=int,
                         help='number of trials for variance testing')
 
@@ -243,32 +245,40 @@ def sendLotsTest():
     # net.iperf((client2, server))
     net.stop()
 
-def multiClientTest():
+def multiClientTest(hps):
     "Create and test a simple network"
-    topo = BigTopo(4)
+    num = hps.num_clients
+    topo = BigTopo(num)
     net = Mininet(topo, link=TCLink)
     net.start()
     #asyncore.loop()
-    client1, client2, client3, client4, server, command = net.get('client1', 'client2', 'client3', 'client4', 'server', 'command')
     net.pingAll()
-    output1 = server.cmd('nohup python -u startServer.py > server_log.txt &')
-    output = client1.cmd('nohup python -u startClient.py {0} {1} > client1_log.txt  &'.format(server.IP(), 97))
-    output = client2.cmd('nohup python -u startClient.py {0} {1} > client2_log.txt &'.format(server.IP(), 0))
-    output = client3.cmd('nohup python -u startClient.py {0} {1} > client3_log.txt  &'.format(server.IP(), 34))
-    output = client4.cmd('nohup python -u startClient.py {0} {1} > client4_log.txt &'.format(server.IP(), 52))
-    print(client1.name)
+    server, command = net.get('server', 'command')
+    clients = []
+    for i in range(num):
+        client = net.get('client{}'.format(i+1))
+        client.cmd('nohup python -u startClient.py {0} {1} > client{2}_log.txt  &'.format(server.IP(), 97, i))
+        clients.append(client)
+    server.cmd('nohup python -u startServer.py > server_log.txt &')
     time.sleep(2)
-    
-    output2 = command.cmd('python startCommander.py {0} {1}'.format(client1.IP(), 'startNTP'))
-    print("starting ntp 1")
-    print(output2)
+   
+    times_ = getTimesMultiple(command, server, clients)
+    for i, client in enumerate(clients):
+        print(client)
+        output2 = command.cmd('python startCommander.py {0} {1}'.format(client.IP(), 'startNTP'))
+        print("starting ntp {}".format(i+1))
+        print(output2)
 
-    output2 = command.cmd('python startCommander.py {0} {1}'.format(client2.IP(), 'startNTP'))
-    print("starting ntp 2")
-    print(output2)
+    times_ = getTimesMultiple(command, server, clients)
 
-    print(getTimesMultiple(command, server, [client1, client2, client3, client4]))
+    if os.path.isfile('multiple_{}'.format(num)):
+        times = pkl.load(open('multiple{}'.format(num), 'rb'))
+    else:
+        times = []
 
+    times.append(times_)
+
+    pkl.dump(times, open('multiple{}'.format(num), 'wb'))
    
     # net.iperf((client1, server))
     # net.iperf((client2, server))
@@ -340,7 +350,7 @@ if __name__ == '__main__':
     if hps.version == 0:
         variableDelayBW(hps)
     elif hps.version == 1:
-        testLots()
+        multiClientTest(hps)
     elif hps.version == 2:
         simpleTest()
     
