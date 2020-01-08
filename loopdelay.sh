@@ -1,5 +1,7 @@
 #!/bin/bash
 
+rm c1_d$1
+rm c2_d$1
 
 for i in {10..1}
 do
