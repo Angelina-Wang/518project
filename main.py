@@ -28,6 +28,8 @@ def parse_args():
                         help='changes the delay to client 2')
     parser.add_argument('--bw', default=1.0, type=float,
                         help='changes bandwidth of link to client 2')
+    parser.add_argument('--version', default=0, type=int,
+                        help='which version of test to run')
     parser.add_argument('--num_trials', default=1, type=int,
                         help='number of trials for variance testing')
 
@@ -334,5 +336,11 @@ if __name__ == '__main__':
     setLogLevel('info')
 
     hps = parse_args()
-    variableDelayBW(hps)
+
+    if hps.version == 0:
+        variableDelayBW(hps)
+    elif hps.version == 1:
+        testLots()
+    elif hps.version == 2:
+        simpleTest()
     
