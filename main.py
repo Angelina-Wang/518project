@@ -42,8 +42,8 @@ class BaselineTopo(Topo):
 
 class BigTopo(Topo):
     def __init__(self, num):
-        super(BigTopo, self).__init__()
         self.numClients = num
+        super(BigTopo, self).__init__()
 
     def build(self):
         switch1 = self.addSwitch('s1')
@@ -53,11 +53,13 @@ class BigTopo(Topo):
         self.addLink(server, switch1)
         command = self.addHost('command')
         self.addLink(command, switch1)
-
-        client1 = self.addHost('client1')
-        client2 = self.addHost('client2')
-        self.addLink(client1, switch1, bw=10, delay='5ms')
-        self.addLink(client2, switch1, bw=10, delay='5ms')
+        
+        clients = []
+        for i in range(self.numClients):
+            client = self.addHost('client{}'.format(i+1))
+            clients.append(client)
+        for client in clients:
+            self.addLink(client, switch1, bw=10, delay='5ms')
 
 def getTimes(command, client1, client2, server):
     client1Time = float(command.cmd('python startCommander.py {0} {1}'.format(client1.IP(), 'getTime')))
@@ -72,41 +74,19 @@ def getTimes(command, client1, client2, server):
 
 def multiClientTest():
     "Create and test a simple network"
-    topo = BigTopo(2)
+    topo = BigTopo(4)
     net = Mininet(topo, link=TCLink)
     net.start()
     #asyncore.loop()
-    client1, client2, server, command = net.get('client1', 'client2', 'server', 'command')
-    print server.IP()
-    print client1.IP()
-    #client1.connectServer(server.IP())
-    #client1.connectServer('10.0.0.3')
-    #client1.sendToServer('hello')
-    # print "Dumping host connections"
-    # dumpNodeConnections(net.hosts)
-    # print "Testing network connectivity"
+    client1, client2, client3, client4, server, command = net.get('client1', 'client2', 'client3', 'client4', 'server', 'command')
     net.pingAll()
-    # print "Testing bandiwdth"
     output1 = server.cmd('nohup python -u startServer.py > server_log.txt &')
-    print(output1)
     output = client1.cmd('nohup python -u startClient.py {0} {1} > client1_log.txt  &'.format(server.IP(), 97))
-    print(output)
     output = client2.cmd('nohup python -u startClient.py {0} {1} > client2_log.txt &'.format(server.IP(), 0))
-    print(output)
+    output = client3.cmd('nohup python -u startClient.py {0} {1} > client3_log.txt  &'.format(server.IP(), 34))
+    output = client4.cmd('nohup python -u startClient.py {0} {1} > client4_log.txt &'.format(server.IP(), 52))
     time.sleep(2)
     
-    output2 = command.cmd('python startCommander.py {0} {1}'.format(server.IP(), 'getTime'))
-    print("get time SERVER")
-    print(output2)
-    
-    output2 = command.cmd('python startCommander.py {0} {1}'.format(client1.IP(), 'getTime'))
-    print("get time client 1")
-    print(output2)
-    
-    output2 = command.cmd('python startCommander.py {0} {1}'.format(client2.IP(), 'getTime'))
-    print("get time client 2")
-    print(output2)
-
     output2 = command.cmd('python startCommander.py {0} {1}'.format(client1.IP(), 'startNTP'))
     print("starting ntp 1")
     print(output2)
