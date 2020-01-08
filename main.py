@@ -100,20 +100,6 @@ class DelayBWTopo(Topo):
         self.addLink(client1, switch1, bw=10, delay='5ms')
         self.addLink(client2, switch1, bw=self.bw, delay='{}ms'.format(self.delay))
 
-def getTimes(command, client1, client2, server):
-    client1Time = float(command.cmd('python startCommander.py {0} {1}'.format(client1.IP(), 'getTime')))
-    serverTime = float(command.cmd('python startCommander.py {0} {1}'.format(server.IP(), 'getTime')))
-    client2Time = float(command.cmd('python startCommander.py {0} {1}'.format(client2.IP(), 'getTime')))
-
-    client2Time_ = float(command.cmd('python startCommander.py {0} {1}'.format(client2.IP(), 'getTime')))
-    serverTime_ = float(command.cmd('python startCommander.py {0} {1}'.format(server.IP(), 'getTime')))
-    client1Time_ = float(command.cmd('python startCommander.py {0} {1}'.format(client1.IP(), 'getTime')))
-
-    client1_diff = (np.abs(client1Time - serverTime) + np.abs(client1Time_ - serverTime_))/2.
-    client2_diff = (np.abs(client2Time - serverTime) + np.abs(client2Time_ - serverTime_))/2.
-
-    return client1_diff, client2_diff
-
 def getTimesMultiple(command, server, clientList):
     #perms = list(itertools.permutations(clientList))
     #diffs = np.zeros(len(clientList))
@@ -130,7 +116,7 @@ def getTimesMultiple(command, server, clientList):
         serverTime = float(command.cmd('python startCommander.py {0} {1}'.format(server.IP(), 'getTime')))
         b = time.time()
         clientTime = float(command.cmd('python startCommander.py {0} {1}'.format(client.IP(), 'getTime')))
-        diffs.append(clientTime - (b - a))
+        diffs.append(clientTime - serverTime - (b - a))
 
     return diffs
 
@@ -160,7 +146,7 @@ def variableDelayBW(hps):
     output2 = command.cmd('python startCommander.py {0} {1}'.format(client2.IP(), 'startNTP'))
     print(output2)
 
-    a, b = getTimes(command, client1, client2, server)
+    a, b = getTimesMultiple(command, server, [client1, client2])
     print('client1 diff')
     print(a)
     print('client2 diff')
@@ -168,6 +154,34 @@ def variableDelayBW(hps):
    
     net.stop()
 
+# sending lots of things along each link
+def sendLotsTest():
+    topo = BaselineTopo()
+    net = Mininet(topo, link=TCLink)
+    net.start()
+    #asyncore.loop()
+    client1, client2, server, command = net.get('client1', 'client2', 'server', 'command')
+    # dumpNodeConnections(net.hosts)
+    net.pingAll()
+    output1 = server.cmd('nohup python -u startServer.py > server_log.txt &')
+    output = client1.cmd('nohup python -u startClient.py {0} {1} > client1_log.txt  &'.format(server.IP(), 97))
+    output = client2.cmd('nohup python -u startClient.py {0} {1} > client2_log.txt &'.format(server.IP(), 33))
+    time.sleep(2)
+    
+    print(getTimesMultiple(command, server, [client1, client2]))
+
+    output2 = command.cmd('python startCommander.py {0} {1}'.format(client1.IP(), 'startNTP'))
+    print("starting ntp 1")
+    print(output2)
+
+    output2 = command.cmd('python startCommander.py {0} {1}'.format(client2.IP(), 'startNTP'))
+    print("starting ntp 2")
+    print(output2)
+
+    print(getTimesMultiple(command, server, [client1, client2]))
+    # net.iperf((client1, server))
+    # net.iperf((client2, server))
+    net.stop()
 
 def multiClientTest():
     "Create and test a simple network"
@@ -195,8 +209,6 @@ def multiClientTest():
 
     print(getTimesMultiple(command, server, [client1, client2, client3, client4]))
 
-    #a, b, c = getTimes(command, client1, client2, server)
-    #print(a, b, c)
    
     # net.iperf((client1, server))
     # net.iperf((client2, server))
@@ -248,7 +260,7 @@ def simpleTest():
     print("starting ntp 2")
     print(output2)
 
-    a, b = getTimes(command, client1, client2, server)
+    a, b = getTimesMultiple(command, server, [client1, client2])
     print('client1 diff')
     print(a)
     print('client2 diff')
@@ -265,7 +277,8 @@ if __name__ == '__main__':
 
     hps = parse_args()
     #simpleTest()
-    variableDelayBW(hps)
+    #variableDelayBW(hps)
     #multiClientTest()
     #simpleTest()
+    sendLotsTest()
     # testClock()
