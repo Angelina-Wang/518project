@@ -154,7 +154,6 @@ def variableDelayBW(hps):
    
     net.stop()
 
-<<<<<<< HEAD
 def busyClient():
     topo = DelayBWTopo(hps)
     
@@ -190,7 +189,6 @@ def busyClient():
    
     net.stop()
 
-=======
 # sending lots of things along each link
 def sendLotsTest():
     topo = BaselineTopo()
@@ -222,7 +220,6 @@ def sendLotsTest():
     print(getTimesMultiple(command, server, [client1, client2]))
     # net.iperf((client2, server))
     net.stop()
->>>>>>> 53e5742da3eb51ee85f9e4212df28c6b67794aa9
 
 def multiClientTest():
     "Create and test a simple network"
