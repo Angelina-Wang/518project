@@ -95,7 +95,7 @@ class DelayBWTopo(Topo):
         client1 = self.addHost('client1')
         client2 = self.addHost('client2')
         self.addLink(client1, switch1, bw=10, delay='5ms')
-        self.addLink(client2, switch1, bw=10, delay='5ms')
+        self.addLink(client2, switch1, bw=self.bw, delay='{}ms'.format(self.delay))
 
 def getTimes(command, client1, client2, server):
     client1Time = float(command.cmd('python startCommander.py {0} {1}'.format(client1.IP(), 'getTime')))
@@ -112,7 +112,7 @@ def getTimes(command, client1, client2, server):
     return client1_diff, client2_diff
 
 def variableDelayBW(hps):
-    topo = BaselineTopo()
+    topo = DelayBWTopo(hps)
     
     net = Mininet(topo, link=TCLink)
     net.start()
@@ -260,8 +260,8 @@ if __name__ == '__main__':
     setLogLevel('info')
 
     hps = parse_args()
-    simpleTest()
-    #variableDelayBW(hps)
+    #simpleTest()
+    variableDelayBW(hps)
 
     #multiClientTest()
     #simpleTest()
