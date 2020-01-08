@@ -315,6 +315,8 @@ def multiTrialDelayBW(hps):
     c1_diffs = []
     c2_diffs = []
     for i in range(hps.num_trials):
+        os.system('sudo mn -c')
+        os.system('sudo pkill -9 python')
         _c1, _c2 = variableDelayBW(hps)
         c1_diffs.append(_c1)
         c2_diffs.append(_c2)
