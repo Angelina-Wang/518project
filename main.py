@@ -13,6 +13,7 @@ from scapy.sendrecv import send
 from scapy.all import *
 import asyncore
 import threading
+import itertools
 
 from argparse import ArgumentParser
 import numpy as np
@@ -55,8 +56,8 @@ class BaselineTopo(Topo):
 
 class BigTopo(Topo):
     def __init__(self, num):
-        super(BigTopo, self).__init__()
         self.numClients = num
+        super(BigTopo, self).__init__()
 
     def build(self):
         switch1 = self.addSwitch('s1')
@@ -66,11 +67,13 @@ class BigTopo(Topo):
         self.addLink(server, switch1)
         command = self.addHost('command')
         self.addLink(command, switch1)
-
-        client1 = self.addHost('client1')
-        client2 = self.addHost('client2')
-        self.addLink(client1, switch1, bw=10, delay='5ms')
-        self.addLink(client2, switch1, bw=10, delay='5ms')
+        
+        clients = []
+        for i in range(self.numClients):
+            client = self.addHost('client{}'.format(i+1))
+            clients.append(client)
+        for client in clients:
+            self.addLink(client, switch1, bw=10, delay='5ms')
 
 class DelayBWTopo(Topo):
     "Single host connected to 2 clients via 1 switch each."
@@ -111,6 +114,26 @@ def getTimes(command, client1, client2, server):
 
     return client1_diff, client2_diff
 
+def getTimesMultiple(command, server, clientList):
+    #perms = list(itertools.permutations(clientList))
+    #diffs = np.zeros(len(clientList))
+
+    #for perm in perms:
+    #    serverTime_ = float(command.cmd('python startCommander.py {0} {1}'.format(server.IP(), 'getTime')))
+    #    for client in perm:
+    #        clientTime = float(command.cmd('python startCommander.py {0} {1}'.format(client.IP(), 'getTime')))
+    #        diffs[int(client.name[6:])] += (clientTime - serverTime)
+   
+    diffs = []
+    for client in clientList:
+        a = time.time()
+        serverTime = float(command.cmd('python startCommander.py {0} {1}'.format(server.IP(), 'getTime')))
+        b = time.time()
+        clientTime = float(command.cmd('python startCommander.py {0} {1}'.format(client.IP(), 'getTime')))
+        diffs.append(clientTime - (b - a))
+
+    return diffs
+
 def variableDelayBW(hps):
     topo = DelayBWTopo(hps)
     
@@ -148,41 +171,20 @@ def variableDelayBW(hps):
 
 def multiClientTest():
     "Create and test a simple network"
-    topo = BigTopo(2)
+    topo = BigTopo(4)
     net = Mininet(topo, link=TCLink)
     net.start()
     #asyncore.loop()
-    client1, client2, server, command = net.get('client1', 'client2', 'server', 'command')
-    print server.IP()
-    print client1.IP()
-    #client1.connectServer(server.IP())
-    #client1.connectServer('10.0.0.3')
-    #client1.sendToServer('hello')
-    # print "Dumping host connections"
-    # dumpNodeConnections(net.hosts)
-    # print "Testing network connectivity"
+    client1, client2, client3, client4, server, command = net.get('client1', 'client2', 'client3', 'client4', 'server', 'command')
     net.pingAll()
-    # print "Testing bandiwdth"
     output1 = server.cmd('nohup python -u startServer.py > server_log.txt &')
-    print(output1)
     output = client1.cmd('nohup python -u startClient.py {0} {1} > client1_log.txt  &'.format(server.IP(), 97))
-    print(output)
     output = client2.cmd('nohup python -u startClient.py {0} {1} > client2_log.txt &'.format(server.IP(), 0))
-    print(output)
+    output = client3.cmd('nohup python -u startClient.py {0} {1} > client3_log.txt  &'.format(server.IP(), 34))
+    output = client4.cmd('nohup python -u startClient.py {0} {1} > client4_log.txt &'.format(server.IP(), 52))
+    print(client1.name)
     time.sleep(2)
     
-    output2 = command.cmd('python startCommander.py {0} {1}'.format(server.IP(), 'getTime'))
-    print("get time SERVER")
-    print(output2)
-    
-    output2 = command.cmd('python startCommander.py {0} {1}'.format(client1.IP(), 'getTime'))
-    print("get time client 1")
-    print(output2)
-    
-    output2 = command.cmd('python startCommander.py {0} {1}'.format(client2.IP(), 'getTime'))
-    print("get time client 2")
-    print(output2)
-
     output2 = command.cmd('python startCommander.py {0} {1}'.format(client1.IP(), 'startNTP'))
     print("starting ntp 1")
     print(output2)
@@ -191,8 +193,10 @@ def multiClientTest():
     print("starting ntp 2")
     print(output2)
 
-    a, b, c = getTimes(command, client1, client2, server)
-    print(a, b, c)
+    print(getTimesMultiple(command, server, [client1, client2, client3, client4]))
+
+    #a, b, c = getTimes(command, client1, client2, server)
+    #print(a, b, c)
    
     # net.iperf((client1, server))
     # net.iperf((client2, server))
@@ -262,7 +266,6 @@ if __name__ == '__main__':
     hps = parse_args()
     #simpleTest()
     variableDelayBW(hps)
-
     #multiClientTest()
     #simpleTest()
     # testClock()
