@@ -127,7 +127,7 @@ def variableDelayBW(hps):
     output = client1.cmd('nohup python -u startClient.py {0} {1} > client1_log.txt  &'.format(server.IP(), 97))
     output = client2.cmd('nohup python -u startClient.py {0} {1} > client2_log.txt &'.format(server.IP(), 0))
 
-    time.sleep(1)
+    time.sleep(3)
 
     print('run NTP on client 1')
     output2 = command.cmd('python startCommander.py {0} {1}'.format(client1.IP(), 'startNTP'))
@@ -263,6 +263,6 @@ if __name__ == '__main__':
     simpleTest()
     #variableDelayBW(hps)
 
-    multiClientTest()
+    #multiClientTest()
     #simpleTest()
     # testClock()
