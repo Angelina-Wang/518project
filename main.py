@@ -41,34 +41,16 @@ class BaselineTopo(Topo):
         client1 = self.addHost('client1')
         client2 = self.addHost('client2')
         self.addLink(client1, switch1, bw=10, delay='5ms')
-        self.addLink(client2, switch1, bw=20, delay='10ms')
+        self.addLink(client2, switch1, bw=10, delay='5ms')
 
-class BaselineTopoSysTime(Topo):
-    "Single host connected to 2 clients via 1 switch each."
-    def build(self):
-        switch1 = self.addSwitch('s1')
-        # switch2 = self.addSwitch('s2')
+def getTimes(command, client1, client2, server):
+    client1Time = float(command.cmd('python startCommander.py {0} {1}'.format(client1.IP(), 'getTime')))
+    serverTime = float(command.cmd('python startCommander.py {0} {1}'.format(server.IP(), 'getTime')))
+    client2Time = float(command.cmd('python startCommander.py {0} {1}'.format(client2.IP(), 'getTime')))
 
-        #server = self.addHost('server', cls=HostWithTime)
-        server = self.addHost('server')
-        self.addLink(server, switch1)
-        #self.addLink(server, switch2)
-
-        #client1 = self.addHost('client1', cls=HostWithTime)
-        #client2 = self.addHost('client2', cls=HostWithTime)
-        client1 = self.addHost('client1')
-        client2 = self.addHost('client2')
-        self.addLink(client1, switch1, bw=10, delay='5ms')
-        self.addLink(client2, switch1, bw=20, delay='10ms')
-
-def getTimes(client1, client2, server):
-    client1Time = command.cmd('python startCommander.py {0} {1}'.format(client1.IP(), 'getTime'))
-    serverTime = command.cmd('python startCommander.py {0} {1}'.format(server.IP(), 'getTime'))
-    client2Time = command.cmd('python startCommander.py {0} {1}'.format(client2.IP(), 'getTime'))
-
-    client2Time_ = command.cmd('python startCommander.py {0} {1}'.format(client2.IP(), 'getTime'))
-    serverTime_ = command.cmd('python startCommander.py {0} {1}'.format(server.IP(), 'getTime'))
-    client1Time_ = command.cmd('python startCommander.py {0} {1}'.format(client1.IP(), 'getTime'))
+    client2Time_ = float(command.cmd('python startCommander.py {0} {1}'.format(client2.IP(), 'getTime')))
+    serverTime_ = float(command.cmd('python startCommander.py {0} {1}'.format(server.IP(), 'getTime')))
+    client1Time_ = float(command.cmd('python startCommander.py {0} {1}'.format(client1.IP(), 'getTime')))
 
     return (client1Time+client1Time_)/2., (client2Time+client2Time_)/2., (serverTime+serverTime_)/2.
 
@@ -84,11 +66,6 @@ def simpleTest():
     #client1.connectServer(server.IP())
     #client1.connectServer('10.0.0.3')
     #client1.sendToServer('hello')
-    #asyncore.loop()
-    #pdb.set_trace()
-    # server.restart(100)
-    # print 'here is the time now'
-    # print server.getTime()
     # print "Dumping host connections"
     # dumpNodeConnections(net.hosts)
     # print "Testing network connectivity"
@@ -122,18 +99,11 @@ def simpleTest():
     print("starting ntp 2")
     print(output2)
 
-    output2 = command.cmd('python startCommander.py {0} {1}'.format(client1.IP(), 'getTime'))
-    print("get time client 1")
-    print(output2)
-    
-    output2 = command.cmd('python startCommander.py {0} {1}'.format(client2.IP(), 'getTime'))
-    print("get time client 2")
-    print(output2)
-    
-    output2 = command.cmd('python startCommander.py {0} {1}'.format(server.IP(), 'getTime'))
-    print("get time SERVER")
-    print(output2)
-    
+    a, b, c = getTimes(command, client1, client2, server)
+    print(a, b, c)
+   
+    # net.iperf((client1, server))
+    # net.iperf((client2, server))
     net.stop()
 
 
