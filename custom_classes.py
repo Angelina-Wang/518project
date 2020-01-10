@@ -66,6 +66,7 @@ class AClient():
             c, addr = self.commandSock.accept()
             if c is not None:
                 msg = c.recv(4096)
+                part1 = self.getTime()
                 if 'startNTP' in msg:
 
                     t_0 = self.getTime()
@@ -74,7 +75,7 @@ class AClient():
                     t_1, t_2 = float(response[0]), float(response[1])
                     offset = ((t_1 - t_0) + (t_2-t_3)) / 2.
                     self.restart(self.getTime()+offset)
-                    c.send(str(offset))
+                    c.send(str(part1) + '|' + str(self.getTime()))
                 elif 'getTime' in msg:
                     c.send(str(self.getTime()))
                 else:
