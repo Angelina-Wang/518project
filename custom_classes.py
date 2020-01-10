@@ -61,26 +61,39 @@ class AClient():
         self.commandSock.listen(100)
         self.startAccepting()
 
+    def connectNew(self, client, addr):
+        print('connecting ', addr)
+        while True:
+            msg = c.recv(4096)
+            part1 = self.getTime()
+            if 'startNTP' in msg:
+
+                t_0 = self.getTime()
+                response = self.sendToServer('startNTP').split('|')
+                t_3 = self.getTime()
+                t_1, t_2 = float(response[0]), float(response[1])
+                offset = ((t_1 - t_0) + (t_2-t_3)) / 2.
+                self.restart(self.getTime()+offset)
+                c.send(str(part1) + '|' + str(self.getTime()))
+            elif 'getTime' in msg:
+                c.send(str(self.getTime()))
+            elif 'close' in msg:
+                clients.remove(client)
+                addrs.remove(addr)
+                client.close()
+                break 
+        return
+
     def startAccepting(self):
+        clients = []
+        addrs = []
+        
         while True:
             c, addr = self.commandSock.accept()
             if c is not None:
-                msg = c.recv(4096)
-                part1 = self.getTime()
-                if 'startNTP' in msg:
-
-                    t_0 = self.getTime()
-                    response = self.sendToServer('startNTP').split('|')
-                    t_3 = self.getTime()
-                    t_1, t_2 = float(response[0]), float(response[1])
-                    offset = ((t_1 - t_0) + (t_2-t_3)) / 2.
-                    self.restart(self.getTime()+offset)
-                    c.send(str(part1) + '|' + str(self.getTime()))
-                elif 'getTime' in msg:
-                    c.send(str(self.getTime()))
-                else:
-                    c.send('back at ya')
-                c.close()
+                clients.append(c)
+                addrs.append(addr)
+                Thread(target=self.connectNew, args=(c, addr)).start()          
 
     def connectServer(self, addr, port=12345):
         self.sock.connect((addr, port))
