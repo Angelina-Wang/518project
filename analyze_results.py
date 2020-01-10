@@ -17,7 +17,7 @@ if hps.f[:8] == 'multiple':
         times = [chunk[num] for chunk in arr]
         trials.append(np.mean(times))
         print('Client {0}: {1}+-{2}'.format(num, np.mean(times), np.std(times)))
-    print("Overall: {0} +- {1} of {2} trials".format(np.mean(trials), np.std(trials), len(trials)))
+    print("Overall: {0} +- {1} of {2} trials".format(np.mean(trials), np.std(trials), num_trials))
 else:
     print hps.f
     arr = pkl.load(open(hps.f, 'rb'))
