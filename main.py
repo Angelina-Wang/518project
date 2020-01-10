@@ -338,13 +338,13 @@ def multiClientTest(hps):
     #asyncore.loop()
     net.pingAll()
     server, command = net.get('server', 'command')
+    server.cmd('nohup python -u startServer.py > server_log.txt &')
     clients = []
     for i in range(num):
         client = net.get('client{}'.format(i+1))
         off = np.random.randint(0, 50)
         client.cmd('nohup python -u startClient.py {0} {1} > client{2}_log.txt  &'.format(server.IP(), off, i))
         clients.append(client)
-    server.cmd('nohup python -u startServer.py > server_log.txt &')
     time.sleep(2)
    
     times_ = getTimesMultiple(command, server, clients)
