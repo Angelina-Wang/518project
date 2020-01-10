@@ -23,6 +23,10 @@ def multiple():
         stds.append(np.std(trials))
         x.append(i)
     plt.errorbar(x, means, yerr=stds)
+    plt.xlabel('Number of Clients')
+    plt.ylabel('Drift from Server (s)')
+    plt.title('Multiple Clients')
+    plt.xlim([1, 11])
     plt.savefig('multiple.png')
         
 
