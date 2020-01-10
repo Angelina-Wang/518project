@@ -305,7 +305,7 @@ def multiClientTest(hps):
     net = Mininet(topo, link=TCLink)
     net.start()
     #asyncore.loop()
-    net.pingAll()
+    #net.pingAll()
     server, command = net.get('server', 'command')
     clients = []
     for i in range(num):
@@ -331,6 +331,80 @@ def multiClientTest(hps):
     else:
         times = []
 
+    times.append(times_)
+
+    pkl.dump(times, open('multiple_{}'.format(num), 'wb'))
+   
+    # net.iperf((client1, server))
+    # net.iperf((client2, server))
+    net.stop()
+
+def dynamicTest(hps):
+    num = hps.num_clients
+    topo = BigTopo(num)
+    net = Mininet(topo, link=TCLink)
+    net.start()
+    #asyncore.loop()
+    #net.pingAll()
+    server, command = net.get('server', 'command')
+    server.cmd('nohup python -u startServer.py > server_log.txt &')
+    clients = []
+    for i in range(num):
+        client = net.get('client{}'.format(i+1))
+        off = np.random.randint(0, 50)
+        if i < 6:
+            print('starting {}'.format(i))
+            client.cmd('nohup python -u startClient.py {0} {1} > client{2}_log.txt  &'.format(server.IP(), off, i))
+            time.sleep(1)
+        clients.append(client)
+    time.sleep(5)
+   
+    for i, client in enumerate(clients[:3]):
+        print(client)
+        output2 = command.cmd('python startCommander.py {0} {1}'.format(client.IP(), 'startNTP'))
+        print("starting ntp {}".format(i+1))
+        print(output2)
+
+    time.sleep(2)
+
+    print('second batch of NTP')
+    leaving_clients = clients[:3]
+    joining_clients = clients[6:]
+    for i, client in enumerate(clients[3:6]):
+        print(client)
+        if len(leaving_clients) != 0:
+            close_num = np.random.randint(0, len(leaving_clients)//2)
+            print("closing {} clients".format(close_num))
+            close_ips = np.random.choice(leaving_clients, close_num, replace=False)
+
+            for j in close_ips:
+                print("closing client {}".format(j))
+                command.cmd('python startCommander.py {0} {1}'.format(j.IP(), 'close'))
+                leaving_clients.remove(j)
+
+        if len(joining_clients) != 0:
+            join_num = np.random.randint(0, len(joining_clients))
+            print("joining {} clients".format(join_num))
+            close_ips = np.random.choice(joining_clients, join_num, replace=False)
+
+            for j in close_ips:
+                print("joining client {}".format(j))
+                off = np.random.randint(0, 50)
+                j.cmd('nohup python -u startClient.py {0} {1} &'.format(server.IP(), off))
+                joining_clients.remove(j)
+                time.sleep(2)
+
+        print("starting ntp {}".format(i+1))
+        output2 = command.cmd('python startCommander.py {0} {1}'.format(client.IP(), 'startNTP'))
+        print(output2)
+
+    if os.path.isfile('multiple_{}'.format(num)):
+        times = pkl.load(open('multiple_{}'.format(num), 'rb'))
+    else:
+        times = []
+
+    times_ = getTimesMultiple(command, server, clients[:6])
+    print(times_)
     times.append(times_)
 
     pkl.dump(times, open('multiple_{}'.format(num), 'wb'))
@@ -410,4 +484,5 @@ if __name__ == '__main__':
         busyClient(hps)
     elif hps.version == 3:
         sendLotsTest()
-    
+    elif hps.version == 4:
+        dynamicTest(hps)

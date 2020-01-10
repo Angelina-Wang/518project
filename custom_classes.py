@@ -25,21 +25,22 @@ class AServer():
             elif 'getTime' in msg:
                 client.send(str(self.getTime()))
             elif 'close' in msg:
-                clients.remove(client)
-                addrs.remove(addr)
+                self.clients.remove(client)
+                self.addrs.remove(addr)
+                print('closing {}', client)
                 client.close()
                 break 
         return
 
     def startAccepting(self):
-        clients = []
-        addrs = []
+        self.clients = []
+        self.addrs = []
         
         while True:
             c, addr = self.sock.accept()
             if c is not None:
-                clients.append(c)
-                addrs.append(addr)
+                self.clients.append(c)
+                self.addrs.append(addr)
                 Thread(target=self.connectNew, args=(c, addr)).start()
                 
 
@@ -58,7 +59,7 @@ class AClient():
     def startListener(self):
         self.commandSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.commandSock.bind(('0.0.0.0', 12345))
-        self.commandSock.listen(100)
+        self.commandSock.listen(1000)
         self.startAccepting()
 
     def startAccepting(self):
@@ -77,6 +78,8 @@ class AClient():
                     c.send(str(offset))
                 elif 'getTime' in msg:
                     c.send(str(self.getTime()))
+                elif 'close' in msg:
+                    self.sendToServer('close')
                 else:
                     c.send('back at ya')
                 c.close()
