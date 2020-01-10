@@ -27,6 +27,8 @@ def parse_args():
 
     parser.add_argument('--delay', default=5, type=int,
                         help='changes the delay to client 2')
+    parser.add_argument('--depth', default=2, type=int,
+                        help='depth of hierarchy')
     parser.add_argument('--bw', default=1.0, type=float,
                         help='changes bandwidth of link to client 2')
     parser.add_argument('--version', default=0, type=int,
@@ -85,7 +87,7 @@ class BigTopo(Topo):
             client = self.addHost('client{}'.format(i+1))
             clients.append(client)
         for client in clients:
-            self.addLink(client, switch1, bw=10, delay='5ms')
+            self.addLink(client, switch1, bw=1, delay='5ms')
 
 class DelayBWTopo(Topo):
     "Single host connected to 2 clients via 1 switch each."
@@ -106,6 +108,35 @@ class DelayBWTopo(Topo):
         client2 = self.addHost('client2')
         self.addLink(client1, switch1, bw=1, delay='5ms')
         self.addLink(client2, switch1, bw=self.bw, delay='{}ms'.format(self.delay))
+
+class HierarchyTopo(Topo):
+    "Single host connected to 2 clients via 1 switch each."
+    def __init__(self, hps):
+        self.bw = hps.bw
+        self.depth = hps.depth
+        super(HierarchyTopo, self).__init__()
+        
+    def build(self):
+        #switches = []
+        #for i in range(self.depth):
+        #    switch = self.addSwitch('s{}'.format(i+1))
+        #    switches.append(switch)
+        switch = self.addSwitch('s1')
+
+        server = self.addHost('server')
+        #self.addLink(server, switches[0])
+        self.addLink(server, switch)
+        command = self.addHost('command')
+        #self.addLink(command, switches[0])
+        self.addLink(command, switch)
+        clients = []
+
+        for i in range(self.depth):
+            client = self.addHost('client{}'.format(i+1))
+            clients.append(client)
+
+        for client in clients:
+            self.addLink(client, switch, bw=1, delay='5ms')
 
 class CPULimitedTopo(Topo):
     "Single host connected to 2 clients via 1 switch each."
@@ -274,7 +305,7 @@ def sendLotsTest():
     
     print(getTimesMultiple(command, server, [client1, client2]))
     #net.iperf((client1, server))
-    lst = (client1, server)
+    lst = (client2, server)
     Thread(target=net.iperf, args=((lst,))).start()
     #Thread(target=net.iperf, args=((client1, server))).start()
 
@@ -339,6 +370,7 @@ def multiClientTest(hps):
     # net.iperf((client2, server))
     net.stop()
 
+
 def dynamicTest(hps):
     num = hps.num_clients
     topo = BigTopo(num)
@@ -360,12 +392,13 @@ def dynamicTest(hps):
     time.sleep(5)
    
     for i, client in enumerate(clients[:3]):
+        
         print(client)
         output2 = command.cmd('python startCommander.py {0} {1}'.format(client.IP(), 'startNTP'))
         print("starting ntp {}".format(i+1))
         print(output2)
 
-    time.sleep(2)
+        time.sleep(2)
 
     print('second batch of NTP')
     leaving_clients = clients[:3]
@@ -405,12 +438,56 @@ def dynamicTest(hps):
 
     times_ = getTimesMultiple(command, server, clients[:6])
     print(times_)
-    times.append(times_)
-
-    pkl.dump(times, open('multiple_{}'.format(num), 'wb'))
    
     # net.iperf((client1, server))
     # net.iperf((client2, server))
+
+def hierarchyTest(hps):
+    "Create and test a simple network"
+    num = hps.depth
+    topo = HierarchyTopo(hps)
+    net = Mininet(topo, link=TCLink)
+    net.start()
+    #asyncore.loop()
+    net.pingAll()
+    server, command = net.get('server', 'command')
+    clients = []
+    server.cmd('nohup python -u startServer.py > server_log.txt &')
+    for i in range(num):
+        client = net.get('client{}'.format(i+1))
+        prev_client = None
+        if i != 0:
+            prev_client = net.get('client{}'.format(i))
+        off = np.random.randint(0, 50)
+        if prev_client is None:
+            client.cmd('nohup python -u startClient.py {0} {1} > client{2}_log.txt  &'.format(server.IP(), off, i))
+        else:
+            client.cmd('nohup python -u startClient.py {0} {1} > client{2}_log.txt  &'.format(prev_client.IP(), off, i))
+        time.sleep(1)
+        clients.append(client)
+    time.sleep(2)
+   
+    times_ = getTimesMultiple(command, server, clients)
+    print(times_)
+    for i, client in enumerate(clients):
+
+        print(client)
+        output2 = command.cmd('python startCommander.py {0} {1}'.format(client.IP(), 'startNTP'))
+        print("starting ntp {}".format(i+1))
+        print(output2)
+
+    times_ = getTimesMultiple(command, server, clients)
+    print(times_)
+
+    if os.path.isfile('hierarchy_{}'.format(num)):
+        times = pkl.load(open('hierarchy_{}'.format(num), 'rb'))
+    else:
+        times = []
+
+    times.append(times_)
+
+    pkl.dump(times, open('hierarchy_{}'.format(num), 'wb'))
+   
     net.stop()
 
 
@@ -485,4 +562,7 @@ if __name__ == '__main__':
     elif hps.version == 3:
         sendLotsTest()
     elif hps.version == 4:
+        hierarchyTest(hps)
+    elif hps.version == 5:
         dynamicTest(hps)
+
