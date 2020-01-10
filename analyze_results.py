@@ -1,5 +1,6 @@
 import pickle as pkl
 import numpy as np
+import matplotlib.pyplot as plt
 from argparse import ArgumentParser
 
 parse = ArgumentParser()
@@ -23,6 +24,15 @@ elif hps.f[:9] == 'hierarchy':
     num_clients = len(arr[0])
     num_trials = len(arr)
     trials = []
+    for num in range(num_clients):
+        times = [chunk[num] for chunk in arr][:10]
+        print('Client {0}: {1}+-{2}'.format(num, np.mean(times), np.std(times)))
+elif hps.f == 'sendLots':
+    arr = pkl.load(open(hps.f, 'rb'))
+    num_clients = len(arr[0])
+    num_trials = len(arr)
+    trials = []
+    print("Num trials: {}".format(num_trials))
     for num in range(num_clients):
         times = [chunk[num] for chunk in arr][:10]
         print('Client {0}: {1}+-{2}'.format(num, np.mean(times), np.std(times)))

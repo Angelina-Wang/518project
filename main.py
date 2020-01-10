@@ -325,7 +325,7 @@ def sendLotsTest():
 
     times.append(times_)
 
-    pkl.dump(times, open('sendLots'.format(num), 'wb'))
+    pkl.dump(times, open('sendLots', 'wb'))
     # net.iperf((client2, server))
     net.stop()
 
