@@ -20,6 +20,7 @@ import numpy as np
 import subprocess
 import os
 import pickle as pkl
+from mininet.node import CPULimitedHost
 
 def parse_args():
     parser = ArgumentParser()
@@ -34,6 +35,8 @@ def parse_args():
                         help='number of clients')
     parser.add_argument('--num_trials', default=1, type=int,
                         help='number of trials for variance testing')
+    parser.add_argument('--cpu_frac', default=0.01, type=float,
+                        help='percent of CPU to give to the server in cpu-limiting test')
 
     return parser.parse_args()
 
@@ -129,6 +132,25 @@ class HierarchyTopo(Topo):
 
         for i, client in enumerate(clients):
             self.addLink(client, switches[i], bw=1, delay='5ms')
+class CPULimitedTopo(Topo):
+    "Single host connected to 2 clients via 1 switch each."
+    def __init__(self, hps):
+        self.bw = hps.bw
+        self.delay = hps.delay
+        super(CPULimitedTopo, self).__init__()
+        
+    def build(self):
+        switch1 = self.addSwitch('s1')
+
+        server = self.addHost('server', cls=CPULimitedHost)
+        self.addLink(server, switch1)
+        command = self.addHost('command')
+        self.addLink(command, switch1)
+
+        client1 = self.addHost('client1')
+        client2 = self.addHost('client2', cls=CPULimitedHost)
+        self.addLink(client1, switch1, bw=1, delay='5ms')
+        self.addLink(client2, switch1, bw=self.bw, delay='{}ms'.format(self.delay))
 
 def getTimesMultiple(command, server, clientList):
     #perms = list(itertools.permutations(clientList))
@@ -221,8 +243,8 @@ def variableDelayBW(hps):
 
     return _c1, _c2
 
-def busyClient():
-    topo = DelayBWTopo(hps)
+def busyClient(hps):
+    topo = CPULimitedTopo(hps)
     
     net = Mininet(topo, link=TCLink)
     net.start()
@@ -234,21 +256,26 @@ def busyClient():
 
     print('initializing server and clients')
     output1 = server.cmd('nohup python -u startServer.py > server_log.txt &')
-    output = client1.cmd('nohup python -u startClient.py {0} {1} > client1_log.txt  &'.format(server.IP(), 97))
-    output = client2.cmd('nohup python -u startClient.py {0} {1} > client2_log.txt &'.format(server.IP(), 0))
-    output = client2.cmd('nohup python -u simulateLoad.py {0} {1} > client2sim_log.txt &'.format(server.IP(), 0))
+    c1_off = np.random.randint(0, 50)
+    c2_off = np.random.randint(0, 50)
+    output = client1.cmd('nohup python -u startClient.py {0} {1} > client1_log.txt  &'.format(server.IP(), c1_off))
+    output = client2.cmd('nohup python -u startClient.py {0} {1} > client2_log.txt &'.format(server.IP(), c2_off))
 
     time.sleep(3)
 
     print('run NTP on client 1')
     output2 = command.cmd('python startCommander.py {0} {1}'.format(client1.IP(), 'startNTP'))
     print(output2)
+    a = getTimesMultiple(command, server, [client1])
+
+    server.setCPUFrac(hps.cpu_frac)
+    output = server.cmd('nohup python -u simulateLoad.py {0} > client2sim_log.txt &'.format(100000))
 
     print('run NTP on client 2')
     output2 = command.cmd('python startCommander.py {0} {1}'.format(client2.IP(), 'startNTP'))
     print(output2)
 
-    a, b = getTimesMultiple(command, server, [client1, client2])
+    b = getTimesMultiple(command, server, [client2])
     print('client1 diff')
     print(a)
     print('client2 diff')
@@ -446,7 +473,9 @@ if __name__ == '__main__':
     elif hps.version == 1:
         multiClientTest(hps)
     elif hps.version == 2:
-        busyClient()
+        busyClient(hps)
     elif hps.version == 3:
         sendLotsTest()
+    elif hps.version == 4:
+        hierarchyTest()
     
