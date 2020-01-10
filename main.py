@@ -82,7 +82,7 @@ class BigTopo(Topo):
             client = self.addHost('client{}'.format(i+1))
             clients.append(client)
         for client in clients:
-            self.addLink(client, switch1, bw=10, delay='5ms')
+            self.addLink(client, switch1, bw=1, delay='5ms')
 
 class DelayBWTopo(Topo):
     "Single host connected to 2 clients via 1 switch each."
@@ -103,6 +103,32 @@ class DelayBWTopo(Topo):
         client2 = self.addHost('client2')
         self.addLink(client1, switch1, bw=1, delay='5ms')
         self.addLink(client2, switch1, bw=self.bw, delay='{}ms'.format(self.delay))
+
+class HierarchyTopo(Topo):
+    "Single host connected to 2 clients via 1 switch each."
+    def __init__(self, hps):
+        self.bw = hps.bw
+        self.depth = hps.depth
+        super(HierarchyTopo, self).__init__()
+        
+    def build(self):
+        switches = []
+        for i in range(self.depth):
+            switch = self.addSwitch('s{}'.format(i+1))
+            switches.append(switch)
+
+        server = self.addHost('server')
+        self.addLink(server, switch[0])
+        command = self.addHost('command')
+        self.addLink(command, switch[0])
+        clients = []
+
+        for i in range(self.depth):
+            client = self.addHost('client'.format(i+1))
+            clients.append(client)
+
+        for i, client in enumerate(clients):
+            self.addLink(client, switches[i], bw=1, delay='5ms')
 
 def getTimesMultiple(command, server, clientList):
     #perms = list(itertools.permutations(clientList))
@@ -306,6 +332,47 @@ def multiClientTest(hps):
     times.append(times_)
 
     pkl.dump(times, open('multiple_{}'.format(num), 'wb'))
+   
+    # net.iperf((client1, server))
+    # net.iperf((client2, server))
+    net.stop()
+
+def hierarchyTest(hps):
+    "Create and test a simple network"
+    num = hps.depth
+    topo = HierarchyTopo(hps)
+    net = Mininet(topo, link=TCLink)
+    net.start()
+    #asyncore.loop()
+    net.pingAll()
+    # server, command = net.get('server', 'command')
+    # clients = []
+    # for i in range(num):
+    #     client = net.get('client{}'.format(i+1))
+    #     off = np.random.randint(0, 50)
+    #     client.cmd('nohup python -u startClient.py {0} {1} > client{2}_log.txt  &'.format(server.IP(), off, i))
+    #     clients.append(client)
+    # server.cmd('nohup python -u startServer.py > server_log.txt &')
+    # time.sleep(2)
+   
+    # times_ = getTimesMultiple(command, server, clients)
+    # for i, client in enumerate(clients):
+    #     print(client)
+    #     output2 = command.cmd('python startCommander.py {0} {1}'.format(client.IP(), 'startNTP'))
+    #     print("starting ntp {}".format(i+1))
+    #     print(output2)
+
+    # times_ = getTimesMultiple(command, server, clients)
+    # print(times_)
+
+    # if os.path.isfile('multiple_{}'.format(num)):
+    #     times = pkl.load(open('multiple_{}'.format(num), 'rb'))
+    # else:
+    #     times = []
+
+    # times.append(times_)
+
+    # pkl.dump(times, open('multiple_{}'.format(num), 'wb'))
    
     # net.iperf((client1, server))
     # net.iperf((client2, server))
