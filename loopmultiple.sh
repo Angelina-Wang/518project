@@ -1,6 +1,6 @@
 #!/bin/bash
 
-rm multiple*
+#rm multiple*
 
 for i in 2 4 6 8 10
 do
@@ -14,5 +14,5 @@ done
 
 for i in 2 4 6 8 10
 do
-    python analyze_results.py -f multiple$i
+    python analyze_results.py -f multiple_$i
 done

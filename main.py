@@ -235,13 +235,13 @@ def sendLotsTest():
     topo = BaselineTopo()
     net = Mininet(topo, link=TCLink)
     net.start()
-    #asyncore.loop()
     client1, client2, server, command = net.get('client1', 'client2', 'server', 'command')
-    # dumpNodeConnections(net.hosts)
     net.pingAll()
     output1 = server.cmd('nohup python -u startServer.py > server_log.txt &')
-    output = client1.cmd('nohup python -u startClient.py {0} {1} > client1_log.txt  &'.format(server.IP(), 97))
-    output = client2.cmd('nohup python -u startClient.py {0} {1} > client2_log.txt &'.format(server.IP(), 33))
+    off = np.random.randint(0, 50)
+    output = client1.cmd('nohup python -u startClient.py {0} {1} > client1_log.txt  &'.format(server.IP(), off))
+    off = np.random.randint(0, 50)
+    output = client2.cmd('nohup python -u startClient.py {0} {1} > client2_log.txt &'.format(server.IP(), off))
     time.sleep(2)
     
     print(getTimesMultiple(command, server, [client1, client2]))
@@ -258,7 +258,15 @@ def sendLotsTest():
     print("starting ntp 2")
     print(output2)
 
-    print(getTimesMultiple(command, server, [client1, client2]))
+    times_ = getTimesMultiple(command, server, [client1, client2])
+    if os.path.isfile('sendLots'):
+        times = pkl.load(open('sendLots', 'rb'))
+    else:
+        times = []
+
+    times.append(times_)
+
+    pkl.dump(times, open('sendLots'.format(num), 'wb'))
     # net.iperf((client2, server))
     net.stop()
 
@@ -291,13 +299,13 @@ def multiClientTest(hps):
     print(times_)
 
     if os.path.isfile('multiple_{}'.format(num)):
-        times = pkl.load(open('multiple{}'.format(num), 'rb'))
+        times = pkl.load(open('multiple_{}'.format(num), 'rb'))
     else:
         times = []
 
     times.append(times_)
 
-    pkl.dump(times, open('multiple{}'.format(num), 'wb'))
+    pkl.dump(times, open('multiple_{}'.format(num), 'wb'))
    
     # net.iperf((client1, server))
     # net.iperf((client2, server))
@@ -372,4 +380,6 @@ if __name__ == '__main__':
         multiClientTest(hps)
     elif hps.version == 2:
         busyClient()
+    elif hps.version == 3:
+        sendLotsTest()
     
