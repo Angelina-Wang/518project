@@ -27,6 +27,8 @@ def parse_args():
 
     parser.add_argument('--delay', default=5, type=int,
                         help='changes the delay to client 2')
+    parser.add_argument('--depth', default=2, type=int,
+                        help='depth of hierarchy')
     parser.add_argument('--bw', default=1.0, type=float,
                         help='changes bandwidth of link to client 2')
     parser.add_argument('--version', default=0, type=int,
@@ -115,23 +117,27 @@ class HierarchyTopo(Topo):
         super(HierarchyTopo, self).__init__()
         
     def build(self):
-        switches = []
-        for i in range(self.depth):
-            switch = self.addSwitch('s{}'.format(i+1))
-            switches.append(switch)
+        #switches = []
+        #for i in range(self.depth):
+        #    switch = self.addSwitch('s{}'.format(i+1))
+        #    switches.append(switch)
+        switch = self.addSwitch('s1')
 
         server = self.addHost('server')
-        self.addLink(server, switch[0])
+        #self.addLink(server, switches[0])
+        self.addLink(server, switch)
         command = self.addHost('command')
-        self.addLink(command, switch[0])
+        #self.addLink(command, switches[0])
+        self.addLink(command, switch)
         clients = []
 
         for i in range(self.depth):
-            client = self.addHost('client'.format(i+1))
+            client = self.addHost('client{}'.format(i+1))
             clients.append(client)
 
-        for i, client in enumerate(clients):
-            self.addLink(client, switches[i], bw=1, delay='5ms')
+        for client in clients:
+            self.addLink(client, switch, bw=1, delay='5ms')
+
 class CPULimitedTopo(Topo):
     "Single host connected to 2 clients via 1 switch each."
     def __init__(self, hps):
@@ -299,7 +305,7 @@ def sendLotsTest():
     
     print(getTimesMultiple(command, server, [client1, client2]))
     #net.iperf((client1, server))
-    lst = (client1, server)
+    lst = (client2, server)
     Thread(target=net.iperf, args=((lst,))).start()
     #Thread(target=net.iperf, args=((client1, server))).start()
 
@@ -372,37 +378,43 @@ def hierarchyTest(hps):
     net.start()
     #asyncore.loop()
     net.pingAll()
-    # server, command = net.get('server', 'command')
-    # clients = []
-    # for i in range(num):
-    #     client = net.get('client{}'.format(i+1))
-    #     off = np.random.randint(0, 50)
-    #     client.cmd('nohup python -u startClient.py {0} {1} > client{2}_log.txt  &'.format(server.IP(), off, i))
-    #     clients.append(client)
-    # server.cmd('nohup python -u startServer.py > server_log.txt &')
-    # time.sleep(2)
+    server, command = net.get('server', 'command')
+    clients = []
+    server.cmd('nohup python -u startServer.py > server_log.txt &')
+    for i in range(num):
+        client = net.get('client{}'.format(i+1))
+        prev_client = None
+        if i != 0:
+            prev_client = net.get('client{}'.format(i))
+        off = np.random.randint(0, 50)
+        if prev_client is None:
+            client.cmd('nohup python -u startClient.py {0} {1} > client{2}_log.txt  &'.format(server.IP(), off, i))
+        else:
+            client.cmd('nohup python -u startClient.py {0} {1} > client{2}_log.txt  &'.format(prev_client.IP(), off, i))
+        time.sleep(1)
+        clients.append(client)
+    time.sleep(2)
    
-    # times_ = getTimesMultiple(command, server, clients)
-    # for i, client in enumerate(clients):
-    #     print(client)
-    #     output2 = command.cmd('python startCommander.py {0} {1}'.format(client.IP(), 'startNTP'))
-    #     print("starting ntp {}".format(i+1))
-    #     print(output2)
+    times_ = getTimesMultiple(command, server, clients)
+    print(times_)
+    for i, client in enumerate(clients):
+        print(client)
+        output2 = command.cmd('python startCommander.py {0} {1}'.format(client.IP(), 'startNTP'))
+        print("starting ntp {}".format(i+1))
+        print(output2)
 
-    # times_ = getTimesMultiple(command, server, clients)
-    # print(times_)
+    times_ = getTimesMultiple(command, server, clients)
+    print(times_)
 
-    # if os.path.isfile('multiple_{}'.format(num)):
-    #     times = pkl.load(open('multiple_{}'.format(num), 'rb'))
-    # else:
-    #     times = []
+    if os.path.isfile('hierarchy_{}'.format(num)):
+        times = pkl.load(open('hierarchy_{}'.format(num), 'rb'))
+    else:
+        times = []
 
-    # times.append(times_)
+    times.append(times_)
 
-    # pkl.dump(times, open('multiple_{}'.format(num), 'wb'))
+    pkl.dump(times, open('hierarchy_{}'.format(num), 'wb'))
    
-    # net.iperf((client1, server))
-    # net.iperf((client2, server))
     net.stop()
 
 
@@ -477,5 +489,7 @@ if __name__ == '__main__':
     elif hps.version == 3:
         sendLotsTest()
     elif hps.version == 4:
-        hierarchyTest()
+        hierarchyTest(hps)
+    elif hps.version == 5:
+        simpleTest()
     

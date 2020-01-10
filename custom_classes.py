@@ -61,7 +61,7 @@ class AClient():
         self.commandSock.listen(100)
         self.startAccepting()
 
-    def connectNew(self, client, addr):
+    def connectNew(self, c, addr):
         print('connecting ', addr)
         while True:
             msg = c.recv(4096)
@@ -78,9 +78,9 @@ class AClient():
             elif 'getTime' in msg:
                 c.send(str(self.getTime()))
             elif 'close' in msg:
-                clients.remove(client)
+                clients.remove(c)
                 addrs.remove(addr)
-                client.close()
+                c.close()
                 break 
         return
 

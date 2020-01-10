@@ -14,10 +14,18 @@ if hps.f[:8] == 'multiple':
     num_trials = len(arr)
     trials = []
     for num in range(num_clients):
-        times = [chunk[num] for chunk in arr]
+        times = [chunk[num] for chunk in arr][:10]
         trials.append(np.mean(times))
         print('Client {0}: {1}+-{2}'.format(num, np.mean(times), np.std(times)))
     print("Overall: {0} +- {1} of {2} trials".format(np.mean(trials), np.std(trials), num_trials))
+elif hps.f[:9] == 'hierarchy':
+    arr = pkl.load(open(hps.f, 'rb'))
+    num_clients = len(arr[0])
+    num_trials = len(arr)
+    trials = []
+    for num in range(num_clients):
+        times = [chunk[num] for chunk in arr][:10]
+        print('Client {0}: {1}+-{2}'.format(num, np.mean(times), np.std(times)))
 else:
     print hps.f
     arr = pkl.load(open(hps.f, 'rb'))
