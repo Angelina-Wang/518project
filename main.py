@@ -282,10 +282,22 @@ def busyClient(hps):
     print(output2)
 
     b = getTimesMultiple(command, server, [client2])
-    print('client1 diff')
-    print(a)
-    print('client2 diff')
-    print(b)
+
+    if os.path.isfile('busy_c1'):
+        c1 = pkl.load(open('busy_c1', 'rb'))
+    else:
+        c1 = []
+
+    if os.path.isfile('busy_c2'):
+        c2 = pkl.load(open('busy_c2', 'rb'))
+    else:
+        c2 = []
+
+    c1.append(a)
+    c2.append(b)
+
+    pkl.dump(c1, open('busy_c1', 'wb'))
+    pkl.dump(c2, open('busy_c2', 'wb'))
    
     net.stop()
 
@@ -406,41 +418,49 @@ def dynamicTest(hps):
     for i, client in enumerate(clients[3:6]):
         print(client)
         if len(leaving_clients) != 0:
-            close_num = np.random.randint(0, len(leaving_clients)//2)
-            print("closing {} clients".format(close_num))
-            close_ips = np.random.choice(leaving_clients, close_num, replace=False)
+            j = np.random.choice(leaving_clients, replace=False)
+            print("closing client {}".format(j))
+            command.cmd('python startCommander.py {0} {1} &'.format(j.IP(), 'close'))
+            leaving_clients.remove(j)
 
-            for j in close_ips:
-                print("closing client {}".format(j))
-                command.cmd('python startCommander.py {0} {1}'.format(j.IP(), 'close'))
-                leaving_clients.remove(j)
-
-        if len(joining_clients) != 0:
-            join_num = np.random.randint(0, len(joining_clients))
-            print("joining {} clients".format(join_num))
-            close_ips = np.random.choice(joining_clients, join_num, replace=False)
-
-            for j in close_ips:
-                print("joining client {}".format(j))
-                off = np.random.randint(0, 50)
-                j.cmd('nohup python -u startClient.py {0} {1} &'.format(server.IP(), off))
-                joining_clients.remove(j)
-                time.sleep(2)
-
-        print("starting ntp {}".format(i+1))
-        output2 = command.cmd('python startCommander.py {0} {1}'.format(client.IP(), 'startNTP'))
-        print(output2)
-
-    if os.path.isfile('multiple_{}'.format(num)):
-        times = pkl.load(open('multiple_{}'.format(num), 'rb'))
-    else:
-        times = []
+            print("starting ntp {}".format(client))
+            output2 = command.cmd('python startCommander.py {0} {1}'.format(client.IP(), 'startNTP'))
 
     times_ = getTimesMultiple(command, server, clients[:6])
     print(times_)
-   
-    # net.iperf((client1, server))
-    # net.iperf((client2, server))
+
+    if os.path.isfile('dynamic_leave'):
+        times = pkl.load(open('dynamic_leave', 'rb'))
+    else:
+        times = []
+
+    times.append(times_)
+
+    pkl.dump(times, open('dynamic_leave', 'wb'))
+
+    for i, client in enumerate(clients[3:6]):
+        print(client)
+        if len(joining_clients) != 0:
+            j = np.random.choice(joining_clients, replace=False)
+            print("joining client {}".format(j))
+            off = np.random.randint(0, 50)
+            j.cmd('nohup python -u startClient.py {0} {1} &'.format(server.IP(), off))
+            print("starting ntp {}".format(client))
+            output2 = command.cmd('python startCommander.py {0} {1}'.format(client.IP(), 'startNTP'))
+            joining_clients.remove(j)
+            time.sleep(2)
+
+    times_ = getTimesMultiple(command, server, clients[:6])
+    print(times_)
+
+    if os.path.isfile('dynamic_join'):
+        times = pkl.load(open('dynamic_join', 'rb'))
+    else:
+        times = []
+
+    times.append(times_)
+
+    pkl.dump(times, open('dynamic_join', 'wb'))
 
 def hierarchyTest(hps):
     "Create and test a simple network"
