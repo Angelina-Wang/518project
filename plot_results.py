@@ -39,8 +39,6 @@ def delay():
         c2_means.append(np.mean(c2_arr))
         c2_stds.append(np.std(c2_arr))
 
-    #plt.fill_between(range(12), base_mean-base_std, base_mean+base_std, alpha=0.5)
-    #plt.errorbar(x, c1_means, c1_stds, label='baseline (5ms)')
     plt.errorbar(x, c2_means, c2_stds, label='variable delay')
 
     plt.xlabel('Delay (ms)')
@@ -65,8 +63,6 @@ def bw():
 
     base_mean = np.mean(bases)
     base_std = np.std(bases)
-    #plt.errorbar(x, c1_means, yerr=c1_stds, label='baseline (1Mb/s)')
-    #plt.hlines(base_mean)
     plt.errorbar(x, c2_means, yerr=c2_stds, label='variable bw')
 
     plt.xlabel('Bandwidth (Mbit/s)')
@@ -80,7 +76,6 @@ def multiple():
     means = []
     stds = []
     x = []
-    #for i in range(1, 11):
     for i in [2, 4, 6, 8, 10]:
         arr = pickle.load(open('multiple_{}'.format(i), 'rb'))
         num_clients = len(arr[0])
