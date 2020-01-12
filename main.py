@@ -199,6 +199,7 @@ def variableDelayBW(hps):
     c1_off = np.random.randint(0, 50)
     c2_off = np.random.randint(0, 50)
     output = client1.cmd('nohup python -u startClient.py {0} {1} > client1_log.txt  &'.format(server.IP(), c1_off))
+    time.sleep(1)
     output = client2.cmd('nohup python -u startClient.py {0} {1} > client2_log.txt &'.format(server.IP(), c2_off))
 
     time.sleep(3)
@@ -218,34 +219,32 @@ def variableDelayBW(hps):
     net.stop()
 
     # we are testing diff delay
-    if hps.delay != 5:
-        if os.path.isfile('c1_d{}'.format(hps.delay)):
-            c1 = pkl.load(open('c1_d{}'.format(hps.delay), 'rb'))
-            c2 = pkl.load(open('c2_d{}'.format(hps.delay), 'rb'))
-        else:
-            c1 = []
-            c2 = []
+    if os.path.isfile('c1_d{}'.format(hps.delay)):
+        c1 = pkl.load(open('c1_d{}'.format(hps.delay), 'rb'))
+        c2 = pkl.load(open('c2_d{}'.format(hps.delay), 'rb'))
+    else:
+        c1 = []
+        c2 = []
 
-        c1.append(_c1)
-        c2.append(_c2)
+    c1.append(_c1)
+    c2.append(_c2)
 
-        pkl.dump(c1, open('c1_d{}'.format(hps.delay), 'wb'))
-        pkl.dump(c2, open('c2_d{}'.format(hps.delay), 'wb'))
+    pkl.dump(c1, open('c1_d{}'.format(hps.delay), 'wb'))
+    pkl.dump(c2, open('c2_d{}'.format(hps.delay), 'wb'))
 
     # we are testing diff bandwidth
-    if hps.bw != 1:
-        if os.path.isfile('c1_bw{}'.format(hps.bw)):
-            c1 = pkl.load(open('c1_bw{}'.format(hps.bw), 'rb'))
-            c2 = pkl.load(open('c2_bw{}'.format(hps.bw), 'rb'))
-        else:
-            c1 = []
-            c2 = []
+    if os.path.isfile('c1_bw{}'.format(hps.bw)):
+        c1 = pkl.load(open('c1_bw{}'.format(hps.bw), 'rb'))
+        c2 = pkl.load(open('c2_bw{}'.format(hps.bw), 'rb'))
+    else:
+        c1 = []
+        c2 = []
 
-        c1.append(_c1)
-        c2.append(_c2)
+    c1.append(_c1)
+    c2.append(_c2)
 
-        pkl.dump(c1, open('c1_bw{}'.format(hps.bw), 'wb'))
-        pkl.dump(c2, open('c2_bw{}'.format(hps.bw), 'wb'))
+    pkl.dump(c1, open('c1_bw{}'.format(hps.bw), 'wb'))
+    pkl.dump(c2, open('c2_bw{}'.format(hps.bw), 'wb'))
 
     return _c1, _c2
 
@@ -283,21 +282,21 @@ def busyClient(hps):
 
     b = getTimesMultiple(command, server, [client2])
 
-    if os.path.isfile('busy_c1'):
-        c1 = pkl.load(open('busy_c1', 'rb'))
+    if os.path.isfile('busy{}_c1'.format(hps.cpu_frac)):
+        c1 = pkl.load(open('busy{}_c1'.format(hps.cpu_frac), 'rb'))
     else:
         c1 = []
 
-    if os.path.isfile('busy_c2'):
-        c2 = pkl.load(open('busy_c2', 'rb'))
+    if os.path.isfile('busy{}_c2'.format(hps.cpu_frac)):
+        c2 = pkl.load(open('busy{}_c2'.format(hps.cpu_frac), 'rb'))
     else:
         c2 = []
 
     c1.append(a)
     c2.append(b)
 
-    pkl.dump(c1, open('busy_c1', 'wb'))
-    pkl.dump(c2, open('busy_c2', 'wb'))
+    pkl.dump(c1, open('busy{}_c1'.format(hps.cpu_frac), 'wb'))
+    pkl.dump(c2, open('busy{}_c2'.format(hps.cpu_frac), 'wb'))
    
     net.stop()
 
