@@ -59,7 +59,7 @@ def sendLots():
         means.append(np.mean(times))
         stds.append(np.std(times))
     tick_label=['Control', 'Busy Link']
-    plt.bar([0, 1], means, yerr=stds, alpha=.2)
+    plt.bar([0, 1], means, yerr=stds, alpha=.2, align='center')
     plt.xticks([0, 1], tick_label)
     plt.ylabel('Drift from Server (s)')
     plt.title('Congested Links')
