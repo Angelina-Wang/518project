@@ -50,6 +50,7 @@ class AServer():
 
     def getTime(self):
         return time.time() - self.start_from_epoch + self.start
+        
 class AClient():
     def __init__(self):
         self.start = 0

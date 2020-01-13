@@ -1,14 +1,13 @@
 #!/bin/bash
 
-rm c1_d$1
-rm c2_d$1
-
-for i in {10..1}
+for i in {1..10}
 do
-    sudo mn -c
-    sudo pkill -9 python
-    sudo python main.py --delay $(echo $1)
+    rm -f c1_d$i
+    rm -f c2_d$i
+    for j in {10..1}
+    do
+	sudo mn -c
+	sudo pkill -9 python
+	sudo python main.py --delay $(echo $i)
+    done
 done
-
-python analyze_results.py -f "c1_d$1"
-python analyze_results.py -f "c2_d$1"

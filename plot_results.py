@@ -5,14 +5,77 @@ import matplotlib.pyplot as plt
 from argparse import ArgumentParser
 import pickle
 import numpy as np
+import glob
 
-def something():
-    a = 1
+def busy():
+    c2_means = []
+    c2_stds = []
+
+    x = [0.001, 0.01, 0.1, 0.25, 0.3]
+    for i in x:
+        c2_arr = pickle.load(open('busy{}_c2'.format(i), 'rb'))
+        c2_means.append(np.mean(c2_arr))
+        c2_stds.append(np.std(c2_arr))
+
+    plt.errorbar(x, c2_means, c2_stds, label='variable delay')
+
+    plt.xlabel('Percentage of CPU granted to server')
+    plt.ylabel('Time difference from server (s)')
+
+    plt.title('Available Compute vs Time Difference')
+    plt.xlim([-0.01, 0.5])
+    plt.savefig('busy_plot.png')
+
+def delay():
+    bases = []
+    c2_means = []
+    c2_stds = []
+    x = np.arange(1, 10)
+
+    for i in x:
+        c1_arr = pickle.load(open('c1_d{}'.format(i), 'rb'))
+        c2_arr = pickle.load(open('c2_d{}'.format(i), 'rb'))
+        bases.extend(c1_arr)
+        c2_means.append(np.mean(c2_arr))
+        c2_stds.append(np.std(c2_arr))
+
+    plt.errorbar(x, c2_means, c2_stds, label='variable delay')
+
+    plt.xlabel('Delay (ms)')
+    plt.ylabel('Time Difference from Server (s)')
+
+    plt.title('Delay vs Time Difference')
+    plt.xlim([0, 11])
+    plt.savefig('delay_plot.png')
+    
+def bw():
+    bases = []
+    c2_means = []
+    c2_stds = []
+    x = [0.001, 0.01, 0.1, 1.0, 10.0]
+
+    for i in x:
+        c1_arr = pickle.load(open('c1_bw{}'.format(i), 'rb'))
+        c2_arr = pickle.load(open('c2_bw{}'.format(i), 'rb'))
+        bases.extend(c1_arr)
+        c2_means.append(np.mean(c2_arr))
+        c2_stds.append(np.std(c2_arr))
+
+    base_mean = np.mean(bases)
+    base_std = np.std(bases)
+    plt.errorbar(x, c2_means, yerr=c2_stds, label='variable bw')
+
+    plt.xlabel('Bandwidth (Mbit/s)')
+    plt.ylabel('Time Difference from Server (s)')
+    plt.xscale('log')
+    plt.title('Bandwidth vs Time Difference')
+    plt.xlim([0, 11])
+    plt.savefig('bw_plot.png')
+
 def multiple():
     means = []
     stds = []
     x = []
-    #for i in range(1, 11):
     for i in [2, 4, 6, 8, 10]:
         arr = pickle.load(open('multiple_{}'.format(i), 'rb'))
         num_clients = len(arr[0])
@@ -67,14 +130,19 @@ def sendLots():
 
 if __name__ == '__main__':
     parse = ArgumentParser()
-    parse.add_argument('--version', type=int, default=0)
+    parse.add_argument('--test', type=str, default='delay')
     hps = parse.parse_args()
-    if hps.version == 0:
-        something()
-    elif hps.version == 1:
+    
+    if hps.test == 'delay':
+        delay()
+    elif hps.test == 'bw':
+        bw()
+    elif hps.test == 'busy':
+        busy()
+    elif hps.test == 'multiple':
         multiple()
-    elif hps.version == 2:
+    elif hps.version == 'hierarchy':
         hierarchy()
-    elif hps.version == 3:
+    elif hps.version == 'busyPipe':
         sendLots()
 

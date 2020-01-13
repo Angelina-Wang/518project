@@ -5,7 +5,7 @@ from argparse import ArgumentParser
 
 parse = ArgumentParser()
 parse.add_argument('-f', type=str, default=None)
-hps = parse.parse_args()
+hps = parse.parse_args()    
 
 assert hps.f is not None
 print("------------{}-------------".format(hps.f))
