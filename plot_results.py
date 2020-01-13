@@ -141,8 +141,8 @@ if __name__ == '__main__':
         busy()
     elif hps.test == 'multiple':
         multiple()
-    elif hps.version == 'hierarchy':
+    elif hps.test == 'hierarchy':
         hierarchy()
-    elif hps.version == 'busyPipe':
+    elif hps.test == 'busyPipe':
         sendLots()
 
